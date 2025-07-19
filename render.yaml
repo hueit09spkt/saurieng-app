@@ -3,5 +3,8 @@ services:
     name: saurieng-app
     env: node
     buildCommand: npm install
-    startCommand: node server.js
-    plan: free 
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production 
