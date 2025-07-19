@@ -87,7 +87,7 @@ app.delete('/api/gardens/:name', asyncHandler(async (req, res) => {
 }));
 
 // Cập nhật thông tin cây
-app.post('/api/gardens/:name/trees', upload.single('image'), asyncHandler(async (req, res) => {
+app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(async (req, res) => {
     const gardenName = req.params.name;
     const gardens = await readGardens();
     const garden = gardens.find(g => g.name === gardenName);
@@ -97,13 +97,25 @@ app.post('/api/gardens/:name/trees', upload.single('image'), asyncHandler(async 
     }
 
     const treeData = req.body;
-    treeData.image = req.file ? `/uploads/${req.file.filename}` : treeData.image || '';
-
     const row = parseInt(treeData.row, 10);
     const col = parseInt(treeData.col, 10);
 
     if (isNaN(row) || isNaN(col)) {
         return res.status(400).json({ error: 'Hàng hoặc cột không hợp lệ.' });
+    }
+
+    // Xử lý nhiều hình ảnh
+    const uploadedImages = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    const existingImages = treeData.existingImages ? JSON.parse(treeData.existingImages) : [];
+    treeData.images = [...existingImages, ...uploadedImages];
+
+    // Xử lý thông tin thu hoạch
+    if (treeData.harvestInfo) {
+        try {
+            treeData.harvestInfo = JSON.parse(treeData.harvestInfo);
+        } catch (e) {
+            treeData.harvestInfo = [];
+        }
     }
 
     const treeIndex = garden.trees.findIndex(t => t.row === row && t.col === col);
