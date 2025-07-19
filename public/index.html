@@ -297,6 +297,25 @@
         </div>
     </div>
 
+    <!-- Popup phóng to ảnh -->
+    <div id="image-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-80 flex items-center justify-center">
+      <button id="close-image-modal" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg z-10">
+        <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      <button id="prev-image" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
+        <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </button>
+      <img id="modal-image" src="" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl object-contain" />
+      <button id="next-image" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-10">
+        <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+    </div>
 
 
     <script>
@@ -555,8 +574,9 @@
                     
                     const img = document.createElement('img');
                     img.src = image;
-                    img.className = 'w-full h-20 object-cover rounded';
+                    img.className = 'w-full h-20 object-cover rounded cursor-pointer';
                     img.alt = '';
+                    img.onclick = () => openImageModal(images, index);
                     
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'absolute top-1 right-1 bg-red-500 text-white text-xs px-1 py-0.5 rounded-full hover:bg-red-600';
@@ -726,6 +746,90 @@
             setTimeout(() => {
                 toast.classList.add('hidden');
             }, 3000);
+        }
+
+        // --- Phóng to ảnh, chuyển ảnh, đóng popup, hỗ trợ back ---
+        let modalImages = [];
+        let modalIndex = 0;
+
+        function openImageModal(images, index) {
+          modalImages = images;
+          modalIndex = index;
+          showModalImage();
+          document.getElementById('image-modal').classList.remove('hidden');
+          window.history.pushState({ imageModal: true }, '');
+        }
+
+        function showModalImage() {
+          const img = document.getElementById('modal-image');
+          img.src = modalImages[modalIndex];
+        }
+
+        document.getElementById('close-image-modal').onclick = function() {
+          document.getElementById('image-modal').classList.add('hidden');
+          if (window.history.state && window.history.state.imageModal) window.history.back();
+        };
+
+        document.getElementById('prev-image').onclick = function() {
+          if (modalIndex > 0) {
+            modalIndex--;
+            showModalImage();
+          }
+        };
+
+        document.getElementById('next-image').onclick = function() {
+          if (modalIndex < modalImages.length - 1) {
+            modalIndex++;
+            showModalImage();
+          }
+        };
+
+        // Vuốt chuyển ảnh trên mobile
+        let startX = 0;
+        document.getElementById('image-modal').addEventListener('touchstart', function(e) {
+          startX = e.touches[0].clientX;
+        });
+        document.getElementById('image-modal').addEventListener('touchend', function(e) {
+          let endX = e.changedTouches[0].clientX;
+          if (endX - startX > 50) document.getElementById('prev-image').click();
+          if (startX - endX > 50) document.getElementById('next-image').click();
+        });
+
+        // Hỗ trợ nút back trên Android
+        window.addEventListener('popstate', function(e) {
+          if (document.getElementById('image-modal').classList.contains('hidden')) return;
+          document.getElementById('image-modal').classList.add('hidden');
+        });
+
+        // --- Gắn sự kiện click vào ảnh preview ---
+        function displayImages(images) {
+            const preview = document.getElementById('tree-images-preview');
+            preview.innerHTML = '';
+            
+            if (images.length > 0) {
+                preview.classList.remove('hidden');
+                images.forEach((image, index) => {
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'relative';
+                    
+                    const img = document.createElement('img');
+                    img.src = image;
+                    img.className = 'w-full h-20 object-cover rounded cursor-pointer';
+                    img.alt = '';
+                    img.onclick = () => openImageModal(images, index);
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'absolute top-1 right-1 bg-red-500 text-white text-xs px-1 py-0.5 rounded-full hover:bg-red-600';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.onclick = () => removeImage(index);
+                    
+                    imgContainer.appendChild(img);
+                    imgContainer.appendChild(deleteBtn);
+                    preview.appendChild(imgContainer);
+                });
+            } else {
+                preview.classList.add('hidden');
+            }
         }
     </script>
 </body>
