@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Vườn Sầu Riêng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#059669',
+                        secondary: '#0f766e',
+                        accent: '#f59e0b'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-emerald-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b-4 border-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-8 w-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h1 class="text-2xl font-bold text-gray-900">Quản Lý Vườn Sầu Riêng</h1>
+                        <p class="text-sm text-gray-600">Hệ thống quản lý vườn cây trồng</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Garden Management Section -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-primary to-secondary px-6 py-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Quản Lý Vườn
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="garden-name" class="block text-sm font-medium text-gray-700 mb-2">Tên vườn</label>
+                                <input type="text" id="garden-name" placeholder="Nhập tên vườn" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="rows" class="block text-sm font-medium text-gray-700 mb-2">Số hàng</label>
+                                    <input type="number" id="rows" placeholder="Số hàng" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                                </div>
+                                <div>
+                                    <label for="cols" class="block text-sm font-medium text-gray-700 mb-2">Số cột</label>
+                                    <input type="number" id="cols" placeholder="Số cột" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="addGarden()" 
+                                class="w-full bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3 px-6 rounded-lg hover:from-secondary hover:to-primary transition duration-200 transform hover:scale-105 shadow-lg">
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Thêm vườn
+                        </button>
+                        
+                        <div class="pt-4 border-t border-gray-200">
+                            <a href="/api/backup" download 
+                               class="w-full bg-gradient-to-r from-accent to-orange-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-500 hover:to-accent transition duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Tải xuống Backup
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Garden Diagram Section -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-secondary to-primary px-6 py-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
+                            </svg>
+                            Sơ Đồ Cây
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="garden-select" class="block text-sm font-medium text-gray-700 mb-2">Chọn Vườn</label>
+                                <select id="garden-select" onchange="loadGarden()" 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                                    <option value="">Chọn một vườn</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="group-rows" class="block text-sm font-medium text-gray-700 mb-2">Hàng/nhóm</label>
+                                <select id="group-rows" onchange="loadGarden()" 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                                    <option value="5" selected>5</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="6">6</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="group-cols" class="block text-sm font-medium text-gray-700 mb-2">Cột/nhóm</label>
+                                <select id="group-cols" onchange="loadGarden()" 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                                    <option value="5" selected>5</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="6">6</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="grid" class="grid gap-3"></div>
+                        
+                        <div class="mt-8">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                                Danh sách cây theo tình trạng
+                            </h3>
+                            <div id="grouped-table" class="overflow-x-auto">
+                                <div class="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
+                                    Chọn vườn để xem thống kê
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sub Grid Container -->
+    <div id="sub-grid-container" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">Chi tiết nhóm cây</h3>
+                    <button onclick="closeSubGrid()" class="text-gray-400 hover:text-gray-600 transition duration-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div id="sub-grid" class="grid gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tree Info Modal -->
+    <div id="tree-info" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">Thông Tin Cây</h3>
+                    <button onclick="closeTreeInfo()" class="text-gray-400 hover:text-gray-600 transition duration-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div>
+                        <label for="tree-variety" class="block text-sm font-medium text-gray-700 mb-2">Giống cây</label>
+                        <input type="text" id="tree-variety" placeholder="Nhập giống cây" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                    </div>
+                    <div>
+                        <label for="tree-status" class="block text-sm font-medium text-gray-700 mb-2">Tình trạng</label>
+                        <select id="tree-status" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                            <option value="Khỏe mạnh">Khỏe mạnh</option>
+                            <option value="Phát triển kém">Phát triển kém</option>
+                            <option value="Sâu bệnh">Sâu bệnh</option>
+                            <option value="Chết">Chết</option>
+                            <option value="Mới trồng">Mới trồng</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tree-image" class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
+                        <input type="file" id="tree-image" accept="image/*" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                        <img id="tree-image-preview" src="" alt="" class="mt-3 max-w-full h-auto rounded-lg hidden">
+                    </div>
+                    <div>
+                        <label for="tree-notes" class="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
+                        <textarea id="tree-notes" rows="4" placeholder="Nhập ghi chú" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200"></textarea>
+                    </div>
+                    <div class="flex space-x-3 pt-4">
+                        <button onclick="saveTree()" 
+                                class="flex-1 bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3 px-6 rounded-lg hover:from-secondary hover:to-primary transition duration-200">
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Lưu
+                        </button>
+                        <button onclick="closeTreeInfo()" 
+                                class="flex-1 bg-gray-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-600 transition duration-200">
+                            Hủy
+                        </button>
+                        <button id="delete-tree-btn" onclick="confirmDeleteTree()" 
+                                class="flex-1 bg-red-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-red-600 transition duration-200 hidden">
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            Xóa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-8 right-8 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg border-l-4 border-primary p-4 max-w-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p id="toast-message" class="text-sm font-medium text-gray-900"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        let selectedGarden = null;
+        let selectedCell = null;
+        let selectedGroup = null;
+
+        window.onload = async () => {
+            const response = await fetch('/api/gardens');
+            const gardens = await response.json();
+            const select = document.getElementById('garden-select');
+            gardens.forEach(garden => {
+                const option = document.createElement('option');
+                option.value = garden.name;
+                option.textContent = garden.name;
+                select.appendChild(option);
+            });
+        };
+
+        async function addGarden() {
+            const name = document.getElementById('garden-name').value;
+            const rows = parseInt(document.getElementById('rows').value);
+            const cols = parseInt(document.getElementById('cols').value);
+            if (!name || isNaN(rows) || isNaN(cols)) {
+                showToast('Vui lòng nhập đầy đủ thông tin vườn.', true);
+                return;
+            }
+
+            const response = await fetch('/api/gardens', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, rows, cols, trees: [] })
+            });
+
+            if (response.ok) {
+                const select = document.getElementById('garden-select');
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+                select.value = name;
+                loadGarden();
+                showToast('Thêm vườn thành công!');
+            } else {
+                const error = await response.json();
+                showToast(error.error, true);
+            }
+        }
+
+        async function loadGarden() {
+            const select = document.getElementById('garden-select');
+            const gardenName = select.value;
+            if (!gardenName) {
+                document.getElementById('grid').innerHTML = '';
+                document.getElementById('grouped-table').innerHTML = '<div class="bg-gray-50 rounded-lg p-4 text-center text-gray-500">Chọn vườn để xem thống kê</div>';
+                return;
+            }
+
+            const response = await fetch('/api/gardens');
+            const gardens = await response.json();
+            selectedGarden = gardens.find(g => g.name === gardenName);
+            if (!selectedGarden) return;
+
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            const groupRows = parseInt(document.getElementById('group-rows').value);
+            const groupCols = parseInt(document.getElementById('group-cols').value);
+            const totalGroupsRow = Math.ceil(selectedGarden.rows / groupRows);
+            const totalGroupsCol = Math.ceil(selectedGarden.cols / groupCols);
+
+            grid.className = `grid gap-3 grid-cols-${totalGroupsCol}`;
+
+            for (let gRow = 0; gRow < totalGroupsRow; gRow++) {
+                for (let gCol = 0; gCol < totalGroupsCol; gCol++) {
+                    const group = document.createElement('div');
+                    group.className = 'bg-gradient-to-br from-green-100 to-emerald-200 border-2 border-green-300 rounded-lg p-4 text-center cursor-pointer hover:from-green-200 hover:to-emerald-300 transition duration-200 transform hover:scale-105 shadow-md';
+                    group.dataset.groupRow = gRow;
+                    group.dataset.groupCol = gCol;
+                    group.innerHTML = `
+                        <div class="text-sm font-semibold text-green-800">Nhóm ${gRow + 1}-${gCol + 1}</div>
+                        <div class="text-xs text-green-600 mt-1">Click để xem chi tiết</div>
+                    `;
+                    group.onclick = () => showSubGrid(gRow, gCol, groupRows, groupCols);
+                    grid.appendChild(group);
+                }
+            }
+
+            // Tải và hiển thị dữ liệu gom nhóm
+            const groupedResponse = await fetch(`/api/gardens/${gardenName}/grouped`);
+            const groupedTrees = await groupedResponse.json();
+            const table = document.getElementById('grouped-table');
+            
+            if (Object.keys(groupedTrees).length === 0) {
+                table.innerHTML = '<div class="bg-gray-50 rounded-lg p-4 text-center text-gray-500">Chưa có dữ liệu cây trong vườn</div>';
+                return;
+            }
+
+            let tableHTML = `
+                <div class="overflow-hidden rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gradient-to-r from-primary to-secondary">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Tình trạng</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Số lượng</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+            `;
+            
+            for (let status in groupedTrees) {
+                const count = groupedTrees[status].length;
+                const statusColor = getStatusColor(status);
+                tableHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
+                                ${status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">${count}</td>
+                    </tr>
+                `;
+            }
+            
+            tableHTML += '</tbody></table></div>';
+            table.innerHTML = tableHTML;
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'Khỏe mạnh': return 'bg-green-100 text-green-800';
+                case 'Phát triển kém': return 'bg-yellow-100 text-yellow-800';
+                case 'Sâu bệnh': return 'bg-red-100 text-red-800';
+                case 'Chết': return 'bg-gray-100 text-gray-800';
+                case 'Mới trồng': return 'bg-blue-100 text-blue-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function showSubGrid(gRow, gCol, groupRows, groupCols) {
+            selectedGroup = { gRow, gCol, groupRows, groupCols };
+            const container = document.getElementById('sub-grid-container');
+            const subGrid = document.getElementById('sub-grid');
+
+            subGrid.innerHTML = '';
+            subGrid.className = `grid gap-2 grid-cols-${groupCols}`;
+
+            const startRow = gRow * groupRows + 1;
+            const endRow = Math.min((gRow + 1) * groupRows, selectedGarden.rows);
+            const startCol = gCol * groupCols + 1;
+            const endCol = Math.min((gCol + 1) * groupCols, selectedGarden.cols);
+
+            for (let row = startRow; row <= endRow; row++) {
+                for (let col = startCol; col <= endCol; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'relative bg-gray-100 border-2 border-gray-300 rounded-lg p-2 cursor-pointer hover:bg-gray-200 transition duration-200 transform hover:scale-105';
+                    
+                    const tree = selectedGarden.trees.find(t => t.row === row && t.col === col);
+                    if (tree) {
+                        cell.className = 'relative bg-gradient-to-br from-green-400 to-green-600 border-2 border-green-500 rounded-lg p-2 cursor-pointer hover:from-green-500 hover:to-green-700 transition duration-200 transform hover:scale-105';
+                        
+                        if (tree.image) {
+                            const img = document.createElement('img');
+                            img.src = tree.image;
+                            img.className = 'w-full h-full object-cover rounded';
+                            img.alt = '';
+                            cell.appendChild(img);
+                        } else {
+                            cell.innerHTML = `
+                                <div class="text-white text-xs font-semibold text-center">
+                                    <div>${tree.variety || 'Cây'}</div>
+                                    <div class="text-xs opacity-75">${tree.status || 'Khỏe mạnh'}</div>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        cell.innerHTML = `
+                            <div class="text-gray-500 text-xs text-center">
+                                <div>Ô trống</div>
+                                <div class="text-xs">${row}-${col}</div>
+                            </div>
+                        `;
+                    }
+                    
+                    cell.onclick = () => openTreeInfo(row, col, tree);
+                    subGrid.appendChild(cell);
+                }
+            }
+            
+            container.classList.remove('hidden');
+        }
+
+
+
+        function closeSubGrid() {
+            document.getElementById('sub-grid-container').classList.add('hidden');
+        }
+
+        function openTreeInfo(row, col, tree) {
+            selectedCell = { row, col };
+            const variety = document.getElementById('tree-variety');
+            const status = document.getElementById('tree-status');
+            const notes = document.getElementById('tree-notes');
+            const imagePreview = document.getElementById('tree-image-preview');
+            const imageInput = document.getElementById('tree-image');
+            const deleteBtn = document.getElementById('delete-tree-btn');
+
+            if (tree) {
+                variety.value = tree.variety || '';
+                status.value = tree.status || 'Khỏe mạnh';
+                notes.value = tree.notes || '';
+                imagePreview.src = tree.image || '';
+                imagePreview.classList.toggle('hidden', !tree.image);
+                deleteBtn.classList.remove('hidden');
+            } else {
+                variety.value = '';
+                status.value = 'Khỏe mạnh';
+                notes.value = '';
+                imagePreview.src = '';
+                imagePreview.classList.add('hidden');
+                imageInput.value = '';
+                deleteBtn.classList.add('hidden');
+            }
+
+            document.getElementById('tree-info').classList.remove('hidden');
+        }
+
+        async function confirmDeleteTree() {
+            if (!selectedCell || !selectedGarden) return;
+            if (!confirm('Bạn có chắc chắn muốn xóa cây này không?')) return;
+            const response = await fetch(`/api/gardens/${selectedGarden.name}/trees`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ row: selectedCell.row, col: selectedCell.col })
+            });
+            if (response.ok) {
+                closeTreeInfo();
+                loadGarden();
+                if (selectedGroup) showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
+                showToast('Xóa cây thành công!');
+            } else {
+                showToast('Lỗi khi xóa cây.', true);
+            }
+        }
+
+        function closeTreeInfo() {
+            document.getElementById('tree-info').classList.add('hidden');
+        }
+
+        async function saveTree() {
+            const variety = document.getElementById('tree-variety').value;
+            const status = document.getElementById('tree-status').value;
+            const notes = document.getElementById('tree-notes').value;
+            const image = document.getElementById('tree-image').files[0];
+
+            const formData = new FormData();
+            formData.append('variety', variety);
+            formData.append('status', status);
+            formData.append('notes', notes);
+            formData.append('row', selectedCell.row);
+            formData.append('col', selectedCell.col);
+            if (image) formData.append('image', image);
+
+            const response = await fetch(`/api/gardens/${selectedGarden.name}/trees`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                closeTreeInfo();
+                loadGarden();
+                if (selectedGroup) showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
+                showToast('Lưu thông tin cây thành công!');
+            } else {
+                showToast('Lỗi khi lưu thông tin cây.', true);
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const messageEl = document.getElementById('toast-message');
+            const icon = toast.querySelector('svg');
+            
+            messageEl.textContent = message;
+            
+            if (isError) {
+                toast.querySelector('.border-primary').classList.remove('border-primary');
+                toast.querySelector('.border-primary').classList.add('border-red-500');
+                icon.classList.remove('text-primary');
+                icon.classList.add('text-red-500');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+            } else {
+                toast.querySelector('.border-red-500')?.classList.remove('border-red-500');
+                toast.querySelector('.border-red-500')?.classList.add('border-primary');
+                icon.classList.remove('text-red-500');
+                icon.classList.add('text-primary');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+            }
+            
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
