@@ -184,9 +184,9 @@
 
     <!-- Tree Info Modal -->
     <div id="tree-info" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm max-h-[95vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center">
                     <h3 class="text-lg font-semibold text-gray-800">Thông Tin Cây</h3>
                     <button onclick="closeTreeInfo()" class="text-gray-400 hover:text-gray-600 transition duration-200">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,16 +194,16 @@
                         </svg>
                     </button>
                 </div>
-                <div class="p-6 space-y-6">
+                <div class="p-4 space-y-4">
                     <div>
-                        <label for="tree-variety" class="block text-sm font-medium text-gray-700 mb-2">Giống cây</label>
+                        <label for="tree-variety" class="block text-sm font-medium text-gray-700 mb-1">Giống cây</label>
                         <input type="text" id="tree-variety" placeholder="Nhập giống cây" 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200 text-sm">
                     </div>
                     <div>
-                        <label for="tree-status" class="block text-sm font-medium text-gray-700 mb-2">Tình trạng</label>
+                        <label for="tree-status" class="block text-sm font-medium text-gray-700 mb-1">Tình trạng</label>
                         <select id="tree-status" 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200 text-sm">
                             <option value="Khỏe mạnh">Khỏe mạnh</option>
                             <option value="Phát triển kém">Phát triển kém</option>
                             <option value="Sâu bệnh">Sâu bệnh</option>
@@ -212,68 +212,89 @@
                         </select>
                     </div>
                     <div>
-                        <label for="tree-images" class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh (có thể chọn nhiều)</label>
-                        <input type="file" id="tree-images" accept="image/*" multiple
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200">
-                        <div id="tree-images-preview" class="mt-3 grid grid-cols-2 gap-2 hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hình ảnh</label>
+                        <div class="space-y-2">
+                            <input type="file" id="tree-images" accept="image/*" multiple
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200 text-sm">
+                            <div class="flex space-x-2">
+                                <button type="button" onclick="openCamera()" 
+                                        class="flex-1 bg-blue-500 text-white text-xs py-2 px-3 rounded hover:bg-blue-600 transition duration-200">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    Chụp ảnh
+                                </button>
+                                <button type="button" onclick="openFilePicker()" 
+                                        class="flex-1 bg-green-500 text-white text-xs py-2 px-3 rounded hover:bg-green-600 transition duration-200">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    Chọn ảnh
+                                </button>
+                            </div>
+                        </div>
+                        <div id="tree-images-preview" class="mt-2 grid grid-cols-2 gap-2 hidden">
                             <!-- Hình ảnh sẽ được hiển thị ở đây -->
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Thông tin thu hoạch</label>
-                        <div class="space-y-3">
-                            <div class="grid grid-cols-2 gap-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Thông tin thu hoạch</label>
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-xs text-gray-600 mb-1">Năm</label>
                                     <input type="number" id="harvest-year" placeholder="2025" min="2000" max="2030"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+                                           class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-600 mb-1">Số quả</label>
                                     <input type="number" id="harvest-count" placeholder="30" min="0"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+                                           class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs text-gray-600 mb-1">Ghi chú thu hoạch</label>
+                                <label class="block text-xs text-gray-600 mb-1">Ghi chú</label>
                                 <input type="text" id="harvest-notes" placeholder="Chất lượng, kích thước..."
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+                                       class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
                             </div>
                             <button type="button" onclick="addHarvestInfo()" 
-                                    class="w-full bg-blue-500 text-white text-sm py-2 px-3 rounded-lg hover:bg-blue-600 transition duration-200">
-                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    class="w-full bg-blue-500 text-white text-xs py-1 px-2 rounded hover:bg-blue-600 transition duration-200">
+                                <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                 </svg>
-                                Thêm thông tin thu hoạch
+                                Thêm thu hoạch
                             </button>
                         </div>
-                        <div id="harvest-list" class="mt-3 space-y-2">
+                        <div id="harvest-list" class="mt-2 space-y-1">
                             <!-- Danh sách thu hoạch sẽ hiển thị ở đây -->
                         </div>
                     </div>
                     <div>
-                        <label for="tree-notes" class="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
-                        <textarea id="tree-notes" rows="4" placeholder="Nhập ghi chú" 
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200"></textarea>
+                        <label for="tree-notes" class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                        <textarea id="tree-notes" rows="3" placeholder="Nhập ghi chú" 
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200 text-sm"></textarea>
                     </div>
-                    <div class="flex space-x-3 pt-4">
+                    <div class="grid grid-cols-2 gap-2 pt-2">
                         <button onclick="saveTree()" 
-                                class="flex-1 bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3 px-6 rounded-lg hover:from-secondary hover:to-primary transition duration-200">
-                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="bg-gradient-to-r from-primary to-secondary text-white font-semibold py-2 px-3 rounded-lg hover:from-secondary hover:to-primary transition duration-200 text-sm">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                             Lưu
                         </button>
                         <button onclick="closeTreeInfo()" 
-                                class="flex-1 bg-gray-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-600 transition duration-200">
+                                class="bg-gray-500 text-white font-semibold py-2 px-3 rounded-lg hover:bg-gray-600 transition duration-200 text-sm">
                             Hủy
                         </button>
+                    </div>
+                    <div class="pt-1">
                         <button id="delete-tree-btn" onclick="confirmDeleteTree()" 
-                                class="flex-1 bg-red-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-red-600 transition duration-200 hidden">
-                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="w-full bg-red-500 text-white font-semibold py-2 px-3 rounded-lg hover:bg-red-600 transition duration-200 text-sm hidden">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
-                            Xóa
+                            Xóa cây
                         </button>
                     </div>
                 </div>
@@ -317,6 +338,35 @@
       </button>
     </div>
 
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black flex flex-col">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-4 bg-black bg-opacity-50">
+                <button onclick="closeCamera()" class="text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+                <h3 class="text-white font-semibold">Chụp ảnh cây</h3>
+                <div class="w-6"></div>
+            </div>
+            
+            <!-- Camera View -->
+            <div class="flex-1 flex items-center justify-center">
+                <video id="camera-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="camera-canvas" class="hidden"></canvas>
+            </div>
+            
+            <!-- Controls -->
+            <div class="flex justify-center items-center p-4 bg-black bg-opacity-50">
+                <button onclick="capturePhoto()" class="bg-white rounded-full p-4 mx-4">
+                    <div class="w-12 h-12 bg-white rounded-full border-4 border-gray-300"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         let selectedGarden = null;
@@ -333,7 +383,61 @@
                 option.textContent = garden.name;
                 select.appendChild(option);
             });
+
+            // Thêm sự kiện cho file input
+            document.getElementById('tree-images').addEventListener('change', function(e) {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    const preview = document.getElementById('tree-images-preview');
+                    preview.innerHTML = '';
+                    preview.classList.remove('hidden');
+                    
+                    Array.from(files).forEach((file, index) => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const imgContainer = document.createElement('div');
+                            imgContainer.className = 'relative';
+                            
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.className = 'w-full h-20 object-cover rounded cursor-pointer';
+                            img.alt = '';
+                            
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'absolute top-1 right-1 bg-red-500 text-white text-xs px-1 py-0.5 rounded-full hover:bg-red-600';
+                            deleteBtn.innerHTML = '×';
+                            deleteBtn.onclick = () => removeFile(index);
+                            
+                            imgContainer.appendChild(img);
+                            imgContainer.appendChild(deleteBtn);
+                            preview.appendChild(imgContainer);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                }
+            });
         };
+
+        function removeFile(index) {
+            if (!confirm('Bạn có chắc chắn muốn xóa hình ảnh này không?')) {
+                return;
+            }
+            
+            const fileInput = document.getElementById('tree-images');
+            const dataTransfer = new DataTransfer();
+            
+            for (let i = 0; i < fileInput.files.length; i++) {
+                if (i !== index) {
+                    dataTransfer.items.add(fileInput.files[i]);
+                }
+            }
+            
+            fileInput.files = dataTransfer.files;
+            
+            // Trigger change event to update preview
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+        }
 
         async function addGarden() {
             const name = document.getElementById('garden-name').value;
@@ -593,6 +697,10 @@
         }
 
         function removeImage(index) {
+            if (!confirm('Bạn có chắc chắn muốn xóa hình ảnh này không?')) {
+                return;
+            }
+            
             const preview = document.getElementById('tree-images-preview');
             const images = Array.from(preview.children).map((container, i) => {
                 if (i !== index) {
@@ -635,15 +743,15 @@
             
             currentHarvestList.forEach((harvest, index) => {
                 const item = document.createElement('div');
-                item.className = 'bg-blue-50 border border-blue-200 rounded-lg p-3';
+                item.className = 'bg-blue-50 border border-blue-200 rounded p-2 text-xs';
                 item.innerHTML = `
-                    <div class="flex justify-between items-start">
+                    <div class="flex justify-between items-center">
                         <div>
-                            <div class="font-semibold text-blue-800">Năm ${harvest.year}: ${harvest.count} quả</div>
-                            <div class="text-sm text-blue-600">${harvest.notes || 'Không có ghi chú'}</div>
+                            <div class="font-semibold text-blue-800">${harvest.year}: ${harvest.count} quả</div>
+                            <div class="text-blue-600">${harvest.notes || 'Không có ghi chú'}</div>
                         </div>
-                        <button onclick="removeHarvestInfo(${index})" class="text-red-500 hover:text-red-700">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onclick="removeHarvestInfo(${index})" class="text-red-500 hover:text-red-700 ml-2">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
                         </button>
@@ -654,6 +762,9 @@
         }
 
         function removeHarvestInfo(index) {
+            if (!confirm('Bạn có chắc chắn muốn xóa thông tin thu hoạch này không?')) {
+                return;
+            }
             currentHarvestList.splice(index, 1);
             displayHarvestList();
         }
@@ -714,7 +825,18 @@
             if (response.ok) {
                 closeTreeInfo();
                 loadGarden();
-                if (selectedGroup) showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
+                
+                // Refresh lại nhóm cây ngay lập tức
+                if (selectedGroup) {
+                    // Cập nhật dữ liệu từ server trước
+                    const gardensResponse = await fetch('/api/gardens');
+                    const gardens = await gardensResponse.json();
+                    selectedGarden = gardens.find(g => g.name === selectedGarden.name);
+                    
+                    // Hiển thị lại nhóm cây với dữ liệu mới
+                    showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
+                }
+                
                 showToast('Lưu thông tin cây thành công!');
             } else {
                 showToast('Lỗi khi lưu thông tin cây.', true);
@@ -800,6 +922,86 @@
           if (document.getElementById('image-modal').classList.contains('hidden')) return;
           document.getElementById('image-modal').classList.add('hidden');
         });
+
+        // --- Camera functions ---
+        let cameraStream = null;
+
+        function openCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showToast('Camera không được hỗ trợ trên thiết bị này.', true);
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'environment', // Sử dụng camera sau
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                } 
+            })
+            .then(function(stream) {
+                cameraStream = stream;
+                const video = document.getElementById('camera-video');
+                video.srcObject = stream;
+                document.getElementById('camera-modal').classList.remove('hidden');
+            })
+            .catch(function(err) {
+                console.error('Lỗi camera:', err);
+                showToast('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.', true);
+            });
+        }
+
+        function closeCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            document.getElementById('camera-modal').classList.add('hidden');
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('camera-video');
+            const canvas = document.getElementById('camera-canvas');
+            const context = canvas.getContext('2d');
+
+            // Set canvas size to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw video frame to canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert canvas to blob
+            canvas.toBlob(function(blob) {
+                // Create a file from blob
+                const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                
+                // Add to file input
+                const fileInput = document.getElementById('tree-images');
+                const dataTransfer = new DataTransfer();
+                
+                // Add existing files
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    dataTransfer.items.add(fileInput.files[i]);
+                }
+                
+                // Add new photo
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                
+                // Trigger change event to update preview
+                const event = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(event);
+                
+                // Close camera
+                closeCamera();
+                showToast('Đã chụp ảnh thành công!');
+            }, 'image/jpeg', 0.8);
+        }
+
+        function openFilePicker() {
+            document.getElementById('tree-images').click();
+        }
 
         // --- Gắn sự kiện click vào ảnh preview ---
         function displayImages(images) {
