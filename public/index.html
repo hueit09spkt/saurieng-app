@@ -373,16 +373,71 @@
         let selectedCell = null;
         let selectedGroup = null;
 
+        // --- Local Storage Functions ---
+        function saveToLocalStorage(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error('Lỗi lưu localStorage:', e);
+            }
+        }
+
+        function loadFromLocalStorage(key) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                console.error('Lỗi đọc localStorage:', e);
+                return null;
+            }
+        }
+
+        function syncWithServer() {
+            // Lưu timestamp để kiểm tra đồng bộ
+            saveToLocalStorage('lastSync', Date.now());
+        }
+
         window.onload = async () => {
-            const response = await fetch('/api/gardens');
-            const gardens = await response.json();
-            const select = document.getElementById('garden-select');
-            gardens.forEach(garden => {
-                const option = document.createElement('option');
-                option.value = garden.name;
-                option.textContent = garden.name;
-                select.appendChild(option);
-            });
+            // Thử load từ localStorage trước
+            const localGardens = loadFromLocalStorage('gardens');
+            
+            try {
+                const response = await fetch('/api/gardens');
+                if (response.ok) {
+                    const serverGardens = await response.json();
+                    
+                    // So sánh với dữ liệu local
+                    if (localGardens && localGardens.length > 0) {
+                        // Merge dữ liệu local và server
+                        const mergedGardens = mergeGardens(serverGardens, localGardens);
+                        saveToLocalStorage('gardens', mergedGardens);
+                        loadGardensToSelect(mergedGardens);
+                    } else {
+                        // Chỉ có dữ liệu server
+                        saveToLocalStorage('gardens', serverGardens);
+                        loadGardensToSelect(serverGardens);
+                    }
+                    
+                    syncWithServer();
+                } else {
+                    // Server lỗi, sử dụng dữ liệu local
+                    if (localGardens && localGardens.length > 0) {
+                        loadGardensToSelect(localGardens);
+                        showToast('Đang sử dụng dữ liệu offline. Vui lòng kiểm tra kết nối mạng.', true);
+                    } else {
+                        showToast('Không thể kết nối server và không có dữ liệu offline.', true);
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi kết nối server:', error);
+                // Sử dụng dữ liệu local nếu có
+                if (localGardens && localGardens.length > 0) {
+                    loadGardensToSelect(localGardens);
+                    showToast('Đang sử dụng dữ liệu offline. Vui lòng kiểm tra kết nối mạng.', true);
+                } else {
+                    showToast('Không thể kết nối server và không có dữ liệu offline.', true);
+                }
+            }
 
             // Thêm sự kiện cho file input
             document.getElementById('tree-images').addEventListener('change', function(e) {
@@ -418,6 +473,48 @@
             });
         };
 
+        function loadGardensToSelect(gardens) {
+            const select = document.getElementById('garden-select');
+            select.innerHTML = '<option value="">Chọn một vườn</option>';
+            gardens.forEach(garden => {
+                const option = document.createElement('option');
+                option.value = garden.name;
+                option.textContent = garden.name;
+                select.appendChild(option);
+            });
+        }
+
+        function mergeGardens(serverGardens, localGardens) {
+            const merged = [...serverGardens];
+            
+            localGardens.forEach(localGarden => {
+                const serverGarden = merged.find(g => g.name === localGarden.name);
+                if (serverGarden) {
+                    // Merge trees từ local vào server
+                    if (localGarden.trees && localGarden.trees.length > 0) {
+                        if (!serverGarden.trees) serverGarden.trees = [];
+                        localGarden.trees.forEach(localTree => {
+                            const existingTree = serverGarden.trees.find(t => 
+                                t.row === localTree.row && t.col === localTree.col
+                            );
+                            if (existingTree) {
+                                // Cập nhật tree hiện có
+                                Object.assign(existingTree, localTree);
+                            } else {
+                                // Thêm tree mới
+                                serverGarden.trees.push(localTree);
+                            }
+                        });
+                    }
+                } else {
+                    // Thêm garden mới từ local
+                    merged.push(localGarden);
+                }
+            });
+            
+            return merged;
+        }
+
         function removeFile(index) {
             if (!confirm('Bạn có chắc chắn muốn xóa hình ảnh này không?')) {
                 return;
@@ -448,13 +545,40 @@
                 return;
             }
 
-            const response = await fetch('/api/gardens', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, rows, cols, trees: [] })
-            });
+            const newGarden = { name, rows, cols, trees: [] };
 
-            if (response.ok) {
+            try {
+                const response = await fetch('/api/gardens', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newGarden)
+                });
+
+                if (response.ok) {
+                    // Lưu vào localStorage
+                    const localGardens = loadFromLocalStorage('gardens') || [];
+                    localGardens.push(newGarden);
+                    saveToLocalStorage('gardens', localGardens);
+
+                    // Cập nhật UI
+                    const select = document.getElementById('garden-select');
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    select.appendChild(option);
+                    select.value = name;
+                    loadGarden();
+                    showToast('Thêm vườn thành công!');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error, true);
+                }
+            } catch (error) {
+                // Nếu server lỗi, vẫn lưu vào localStorage
+                const localGardens = loadFromLocalStorage('gardens') || [];
+                localGardens.push(newGarden);
+                saveToLocalStorage('gardens', localGardens);
+
                 const select = document.getElementById('garden-select');
                 const option = document.createElement('option');
                 option.value = name;
@@ -462,10 +586,7 @@
                 select.appendChild(option);
                 select.value = name;
                 loadGarden();
-                showToast('Thêm vườn thành công!');
-            } else {
-                const error = await response.json();
-                showToast(error.error, true);
+                showToast('Đã lưu offline. Sẽ đồng bộ khi có kết nối mạng.');
             }
         }
 
@@ -478,8 +599,22 @@
                 return;
             }
 
-            const response = await fetch('/api/gardens');
-            const gardens = await response.json();
+            // Thử load từ server trước, nếu lỗi thì dùng local
+            let gardens = [];
+            try {
+                const response = await fetch('/api/gardens');
+                if (response.ok) {
+                    gardens = await response.json();
+                    // Cập nhật localStorage
+                    saveToLocalStorage('gardens', gardens);
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                // Sử dụng dữ liệu local
+                gardens = loadFromLocalStorage('gardens') || [];
+            }
+
             selectedGarden = gardens.find(g => g.name === gardenName);
             if (!selectedGarden) return;
 
@@ -507,9 +642,14 @@
                 }
             }
 
-            // Tải và hiển thị dữ liệu gom nhóm
-            const groupedResponse = await fetch(`/api/gardens/${gardenName}/grouped`);
-            const groupedTrees = await groupedResponse.json();
+            // Tạo thống kê từ dữ liệu local
+            const groupedTrees = selectedGarden.trees ? selectedGarden.trees.reduce((acc, tree) => {
+                const status = tree.status || 'Không xác định';
+                if (!acc[status]) acc[status] = [];
+                acc[status].push(tree);
+                return acc;
+            }, {}) : {};
+
             const table = document.getElementById('grouped-table');
             
             if (Object.keys(groupedTrees).length === 0) {
@@ -803,43 +943,94 @@
                 container.querySelector('img').src
             );
 
-            const formData = new FormData();
-            formData.append('variety', variety);
-            formData.append('status', status);
-            formData.append('notes', notes);
-            formData.append('row', selectedCell.row);
-            formData.append('col', selectedCell.col);
-            formData.append('existingImages', JSON.stringify(existingImages));
-            formData.append('harvestInfo', JSON.stringify(currentHarvestList));
-            
-            // Thêm hình ảnh mới
-            for (let i = 0; i < imagesInput.files.length; i++) {
-                formData.append('images', imagesInput.files[i]);
+            const treeData = {
+                variety,
+                status,
+                notes,
+                row: selectedCell.row,
+                col: selectedCell.col,
+                images: existingImages,
+                harvestInfo: currentHarvestList
+            };
+
+            // Thêm hình ảnh mới từ file input
+            if (imagesInput.files.length > 0) {
+                for (let i = 0; i < imagesInput.files.length; i++) {
+                    const file = imagesInput.files[i];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        treeData.images.push(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
             }
 
-            const response = await fetch(`/api/gardens/${selectedGarden.name}/trees`, {
-                method: 'POST',
-                body: formData
-            });
+            try {
+                const formData = new FormData();
+                formData.append('variety', variety);
+                formData.append('status', status);
+                formData.append('notes', notes);
+                formData.append('row', selectedCell.row);
+                formData.append('col', selectedCell.col);
+                formData.append('existingImages', JSON.stringify(existingImages));
+                formData.append('harvestInfo', JSON.stringify(currentHarvestList));
+                
+                // Thêm hình ảnh mới
+                for (let i = 0; i < imagesInput.files.length; i++) {
+                    formData.append('images', imagesInput.files[i]);
+                }
 
-            if (response.ok) {
+                const response = await fetch(`/api/gardens/${selectedGarden.name}/trees`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // Cập nhật localStorage
+                    updateLocalGarden(selectedGarden.name, selectedCell.row, selectedCell.col, treeData);
+                    
+                    closeTreeInfo();
+                    loadGarden();
+                    
+                    // Refresh lại nhóm cây ngay lập tức
+                    if (selectedGroup) {
+                        showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
+                    }
+                    
+                    showToast('Lưu thông tin cây thành công!');
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                // Nếu server lỗi, vẫn lưu vào localStorage
+                updateLocalGarden(selectedGarden.name, selectedCell.row, selectedCell.col, treeData);
+                
                 closeTreeInfo();
                 loadGarden();
                 
-                // Refresh lại nhóm cây ngay lập tức
                 if (selectedGroup) {
-                    // Cập nhật dữ liệu từ server trước
-                    const gardensResponse = await fetch('/api/gardens');
-                    const gardens = await gardensResponse.json();
-                    selectedGarden = gardens.find(g => g.name === selectedGarden.name);
-                    
-                    // Hiển thị lại nhóm cây với dữ liệu mới
                     showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
                 }
                 
-                showToast('Lưu thông tin cây thành công!');
-            } else {
-                showToast('Lỗi khi lưu thông tin cây.', true);
+                showToast('Đã lưu offline. Sẽ đồng bộ khi có kết nối mạng.');
+            }
+        }
+
+        function updateLocalGarden(gardenName, row, col, treeData) {
+            const localGardens = loadFromLocalStorage('gardens') || [];
+            const garden = localGardens.find(g => g.name === gardenName);
+            
+            if (garden) {
+                if (!garden.trees) garden.trees = [];
+                
+                const existingTreeIndex = garden.trees.findIndex(t => t.row === row && t.col === col);
+                if (existingTreeIndex >= 0) {
+                    garden.trees[existingTreeIndex] = { ...garden.trees[existingTreeIndex], ...treeData };
+                } else {
+                    garden.trees.push(treeData);
+                }
+                
+                saveToLocalStorage('gardens', localGardens);
             }
         }
 
