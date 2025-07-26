@@ -3,39 +3,43 @@ const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
 const archiver = require('archiver');
-const Database = require('better-sqlite3');
+const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Khởi tạo database
-const db = new Database('./data/gardens.db');
+const db = new sqlite3.Database('./data/gardens.db');
 
 // Tạo tables nếu chưa có
-db.exec(`
-    CREATE TABLE IF NOT EXISTS gardens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        rows INTEGER NOT NULL,
-        cols INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+db.serialize(() => {
+    db.run(`
+        CREATE TABLE IF NOT EXISTS gardens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            rows INTEGER NOT NULL,
+            cols INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
     
-    CREATE TABLE IF NOT EXISTS trees (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        garden_id INTEGER NOT NULL,
-        row INTEGER NOT NULL,
-        col INTEGER NOT NULL,
-        variety TEXT,
-        status TEXT,
-        notes TEXT,
-        images TEXT,
-        harvest_info TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (garden_id) REFERENCES gardens (id),
-        UNIQUE(garden_id, row, col)
-    );
-`);
+    db.run(`
+        CREATE TABLE IF NOT EXISTS trees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            garden_id INTEGER NOT NULL,
+            row INTEGER NOT NULL,
+            col INTEGER NOT NULL,
+            variety TEXT,
+            status TEXT,
+            notes TEXT,
+            images TEXT,
+            harvest_info TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (garden_id) REFERENCES gardens (id),
+            UNIQUE(garden_id, row, col)
+        )
+    `);
+});
 
 // Cấu hình Multer để lưu ảnh
 const storage = multer.diskStorage({
@@ -57,64 +61,134 @@ app.use(express.json());
 
 // Hàm trợ giúp để đọc và ghi database
 const readGardens = () => {
-    const gardens = db.prepare('SELECT * FROM gardens ORDER BY created_at DESC').all();
-    return gardens.map(garden => {
-        const trees = db.prepare('SELECT * FROM trees WHERE garden_id = ?').all(garden.id);
-        return {
-            ...garden,
-            trees: trees.map(tree => ({
-                row: tree.row,
-                col: tree.col,
-                variety: tree.variety,
-                status: tree.status,
-                notes: tree.notes,
-                images: tree.images ? JSON.parse(tree.images) : [],
-                harvestInfo: tree.harvest_info ? JSON.parse(tree.harvest_info) : []
-            }))
-        };
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM gardens ORDER BY created_at DESC', [], (err, gardens) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            
+            if (gardens.length === 0) {
+                resolve([]);
+                return;
+            }
+            
+            const gardensWithTrees = [];
+            let processed = 0;
+            
+            gardens.forEach(garden => {
+                db.all('SELECT * FROM trees WHERE garden_id = ?', [garden.id], (err, trees) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    
+                    gardensWithTrees.push({
+                        ...garden,
+                        trees: trees.map(tree => ({
+                            row: tree.row,
+                            col: tree.col,
+                            variety: tree.variety,
+                            status: tree.status,
+                            notes: tree.notes,
+                            images: tree.images ? JSON.parse(tree.images) : [],
+                            harvestInfo: tree.harvest_info ? JSON.parse(tree.harvest_info) : []
+                        }))
+                    });
+                    
+                    processed++;
+                    if (processed === gardens.length) {
+                        resolve(gardensWithTrees);
+                    }
+                });
+            });
+        });
     });
 };
 
 const writeGarden = (gardenData) => {
-    const stmt = db.prepare('INSERT INTO gardens (name, rows, cols) VALUES (?, ?, ?)');
-    const result = stmt.run(gardenData.name, gardenData.rows, gardenData.cols);
-    return result.lastInsertRowid;
+    return new Promise((resolve, reject) => {
+        db.run('INSERT INTO gardens (name, rows, cols) VALUES (?, ?, ?)', 
+            [gardenData.name, gardenData.rows, gardenData.cols], 
+            function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(this.lastID);
+                }
+            });
+    });
 };
 
 const updateTree = (gardenName, treeData) => {
-    const garden = db.prepare('SELECT id FROM gardens WHERE name = ?').get(gardenName);
-    if (!garden) return false;
-
-    const images = JSON.stringify(treeData.images || []);
-    const harvestInfo = JSON.stringify(treeData.harvestInfo || []);
-
-    const stmt = db.prepare(`
-        INSERT OR REPLACE INTO trees 
-        (garden_id, row, col, variety, status, notes, images, harvest_info, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `);
-    
-    stmt.run(
-        garden.id,
-        treeData.row,
-        treeData.col,
-        treeData.variety,
-        treeData.status,
-        treeData.notes,
-        images,
-        harvestInfo
-    );
-    
-    return true;
+    return new Promise((resolve, reject) => {
+        db.get('SELECT id FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            
+            if (!garden) {
+                resolve(false);
+                return;
+            }
+            
+            const images = JSON.stringify(treeData.images || []);
+            const harvestInfo = JSON.stringify(treeData.harvestInfo || []);
+            
+            db.run(`
+                INSERT OR REPLACE INTO trees 
+                (garden_id, row, col, variety, status, notes, images, harvest_info, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `, [
+                garden.id,
+                treeData.row,
+                treeData.col,
+                treeData.variety,
+                treeData.status,
+                treeData.notes,
+                images,
+                harvestInfo
+            ], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(true);
+                }
+            });
+        });
+    });
 };
 
 const deleteGarden = (gardenName) => {
-    const garden = db.prepare('SELECT id FROM gardens WHERE name = ?').get(gardenName);
-    if (!garden) return false;
-
-    db.prepare('DELETE FROM trees WHERE garden_id = ?').run(garden.id);
-    db.prepare('DELETE FROM gardens WHERE id = ?').run(garden.id);
-    return true;
+    return new Promise((resolve, reject) => {
+        db.get('SELECT id FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            
+            if (!garden) {
+                resolve(false);
+                return;
+            }
+            
+            db.run('DELETE FROM trees WHERE garden_id = ?', [garden.id], (err) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                
+                db.run('DELETE FROM gardens WHERE id = ?', [garden.id], (err) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(true);
+                    }
+                });
+            });
+        });
+    });
 };
 
 // Hàm wrapper để xử lý lỗi trong các route async
@@ -124,7 +198,7 @@ const asyncHandler = fn => (req, res, next) => {
 
 // Lấy danh sách vườn
 app.get('/api/gardens', asyncHandler(async (req, res) => {
-    const gardens = readGardens();
+    const gardens = await readGardens();
     res.json(gardens);
 }));
 
@@ -136,7 +210,7 @@ app.post('/api/gardens', asyncHandler(async (req, res) => {
     }
 
     try {
-        const gardenId = writeGarden(newGarden);
+        const gardenId = await writeGarden(newGarden);
         res.status(201).json({ ...newGarden, id: gardenId });
     } catch (error) {
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -149,7 +223,7 @@ app.post('/api/gardens', asyncHandler(async (req, res) => {
 // Xóa vườn
 app.delete('/api/gardens/:name', asyncHandler(async (req, res) => {
     const gardenName = req.params.name;
-    const success = deleteGarden(gardenName);
+    const success = await deleteGarden(gardenName);
 
     if (!success) {
         return res.status(404).json({ error: 'Không tìm thấy vườn để xóa.' });
@@ -194,7 +268,7 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
         harvestInfo
     };
 
-    const success = updateTree(gardenName, finalTreeData);
+    const success = await updateTree(gardenName, finalTreeData);
     if (!success) {
         return res.status(404).json({ error: 'Không tìm thấy vườn.' });
     }
@@ -205,21 +279,38 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
 // Gom nhóm cây theo tình trạng
 app.get('/api/gardens/:name/grouped', asyncHandler(async (req, res) => {
     const gardenName = req.params.name;
-    const garden = db.prepare('SELECT id FROM gardens WHERE name = ?').get(gardenName);
-
-    if (!garden) {
-        return res.status(404).json({ error: 'Không tìm thấy vườn.' });
-    }
-
-    const trees = db.prepare('SELECT status FROM trees WHERE garden_id = ?').all(garden.id);
-    const groupedTrees = trees.reduce((acc, tree) => {
-        const status = tree.status || 'Không xác định';
-        if (!acc[status]) acc[status] = [];
-        acc[status].push(tree);
-        return acc;
-    }, {});
-
-    res.json(groupedTrees);
+    
+    return new Promise((resolve, reject) => {
+        db.get('SELECT id FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            
+            if (!garden) {
+                res.status(404).json({ error: 'Không tìm thấy vườn.' });
+                resolve();
+                return;
+            }
+            
+            db.all('SELECT status FROM trees WHERE garden_id = ?', [garden.id], (err, trees) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                
+                const groupedTrees = trees.reduce((acc, tree) => {
+                    const status = tree.status || 'Không xác định';
+                    if (!acc[status]) acc[status] = [];
+                    acc[status].push(tree);
+                    return acc;
+                }, {});
+                
+                res.json(groupedTrees);
+                resolve();
+            });
+        });
+    });
 }));
 
 // Tạo và tải file backup
@@ -255,10 +346,10 @@ const initialize = async () => {
         await fs.mkdir('./uploads', { recursive: true });
         
         // Kiểm tra xem có dữ liệu mẫu chưa
-        const gardens = readGardens();
+        const gardens = await readGardens();
         if (gardens.length === 0) {
             // Tạo vườn mẫu
-            const gardenId = writeGarden({
+            const gardenId = await writeGarden({
                 name: "Vườn Mẫu",
                 rows: 5,
                 cols: 5
@@ -271,9 +362,9 @@ const initialize = async () => {
                 { row: 3, col: 3, status: "Mới trồng", variety: "Chín Thơm" }
             ];
             
-            sampleTrees.forEach(tree => {
-                updateTree("Vườn Mẫu", tree);
-            });
+            for (const tree of sampleTrees) {
+                await updateTree("Vườn Mẫu", tree);
+            }
         }
 
         app.listen(port, () => {
