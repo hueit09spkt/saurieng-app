@@ -954,53 +954,59 @@
             };
 
             try {
-                const formData = new FormData();
-                formData.append('variety', variety);
-                formData.append('status', status);
-                formData.append('notes', notes);
-                formData.append('row', selectedCell.row);
-                formData.append('col', selectedCell.col);
-                
-                // Đảm bảo JSON được gửi đúng cách
-                if (existingImages.length > 0) {
-                    formData.append('existingImages', JSON.stringify(existingImages));
-                } else {
-                    formData.append('existingImages', '[]');
-                }
-                
-                if (currentHarvestList.length > 0) {
-                    formData.append('harvestInfo', JSON.stringify(currentHarvestList));
-                } else {
-                    formData.append('harvestInfo', '[]');
-                }
-                
-                // Thêm hình ảnh mới
-                for (let i = 0; i < imagesInput.files.length; i++) {
-                    formData.append('images', imagesInput.files[i]);
-                }
-
-                console.log('Gửi dữ liệu:', {
+                // Gửi dữ liệu JSON trước (chỉ metadata, không gửi base64 images)
+                const jsonData = {
                     variety,
                     status,
                     notes,
                     row: selectedCell.row,
                     col: selectedCell.col,
-                    existingImages: existingImages.length,
-                    harvestInfo: currentHarvestList.length,
-                    newImages: imagesInput.files.length
+                    existingImagesCount: existingImages.length,
+                    harvestInfo: currentHarvestList
+                };
+
+                console.log('Gửi dữ liệu JSON:', jsonData);
+
+                // Gửi JSON data trước
+                const jsonResponse = await fetch(`/api/gardens/${selectedGarden.name}/trees/json`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(jsonData)
                 });
 
-                const response = await fetch(`/api/gardens/${selectedGarden.name}/trees`, {
-                    method: 'POST',
-                    body: formData
-                });
+                if (!jsonResponse.ok) {
+                    throw new Error('Lỗi khi gửi dữ liệu JSON');
+                }
+
+                // Nếu có hình ảnh mới, gửi riêng
+                if (imagesInput.files.length > 0) {
+                    const formData = new FormData();
+                    for (let i = 0; i < imagesInput.files.length; i++) {
+                        formData.append('images', imagesInput.files[i]);
+                    }
+                    formData.append('row', selectedCell.row);
+                    formData.append('col', selectedCell.col);
+
+                    const imageResponse = await fetch(`/api/gardens/${selectedGarden.name}/trees/images`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!imageResponse.ok) {
+                        throw new Error('Lỗi khi gửi hình ảnh');
+                    }
+                }
+
+                const response = { ok: true }; // Giả lập response thành công
 
                 if (response.ok) {
                     // Cập nhật localStorage
                     updateLocalGarden(selectedGarden.name, selectedCell.row, selectedCell.col, treeData);
                     
                     closeTreeInfo();
-                    loadGarden();
+                    
+                    // Refresh dữ liệu từ server và cập nhật UI
+                    await refreshGardenData();
                     
                     // Refresh lại nhóm cây ngay lập tức
                     if (selectedGroup) {
@@ -1020,13 +1026,40 @@
                 updateLocalGarden(selectedGarden.name, selectedCell.row, selectedCell.col, treeData);
                 
                 closeTreeInfo();
-                loadGarden();
+                
+                // Refresh dữ liệu từ localStorage
+                await refreshGardenData();
                 
                 if (selectedGroup) {
                     showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
                 }
                 
                 showToast('Đã lưu offline. Sẽ đồng bộ khi có kết nối mạng.');
+            }
+        }
+
+        async function refreshGardenData() {
+            try {
+                const response = await fetch('/api/gardens');
+                if (response.ok) {
+                    const gardens = await response.json();
+                    saveToLocalStorage('gardens', gardens);
+                    
+                    // Cập nhật selectedGarden với dữ liệu mới
+                    if (selectedGarden) {
+                        const updatedGarden = gardens.find(g => g.name === selectedGarden.name);
+                        if (updatedGarden) {
+                            selectedGarden = updatedGarden;
+                        }
+                    }
+                    
+                    // Refresh UI
+                    loadGarden();
+                } else {
+                    console.error('Không thể refresh dữ liệu từ server');
+                }
+            } catch (error) {
+                console.error('Lỗi khi refresh dữ liệu:', error);
             }
         }
 

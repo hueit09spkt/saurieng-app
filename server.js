@@ -57,7 +57,8 @@ const upload = multer({ storage });
 // Phục vụ file tĩnh từ thư mục public
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Hàm trợ giúp để đọc và ghi database
 const readGardens = () => {
@@ -122,19 +123,34 @@ const writeGarden = (gardenData) => {
 
 const updateTree = (gardenName, treeData) => {
     return new Promise((resolve, reject) => {
+        console.log('updateTree được gọi với:', { gardenName, treeData });
+        
         db.get('SELECT id FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
             if (err) {
+                console.error('Lỗi khi tìm garden:', err);
                 reject(err);
                 return;
             }
             
             if (!garden) {
+                console.log('Không tìm thấy garden:', gardenName);
                 resolve(false);
                 return;
             }
             
             const images = JSON.stringify(treeData.images || []);
             const harvestInfo = JSON.stringify(treeData.harvestInfo || []);
+            
+            console.log('Sẽ lưu vào database:', {
+                gardenId: garden.id,
+                row: treeData.row,
+                col: treeData.col,
+                variety: treeData.variety,
+                status: treeData.status,
+                notes: treeData.notes,
+                imagesCount: treeData.images ? treeData.images.length : 0,
+                harvestInfoCount: treeData.harvestInfo ? treeData.harvestInfo.length : 0
+            });
             
             db.run(`
                 INSERT OR REPLACE INTO trees 
@@ -151,8 +167,10 @@ const updateTree = (gardenName, treeData) => {
                 harvestInfo
             ], function(err) {
                 if (err) {
+                    console.error('Lỗi khi lưu tree:', err);
                     reject(err);
                 } else {
+                    console.log('Lưu tree thành công, lastID:', this.lastID);
                     resolve(true);
                 }
             });
@@ -232,7 +250,120 @@ app.delete('/api/gardens/:name', asyncHandler(async (req, res) => {
     res.json({ success: true });
 }));
 
-// Cập nhật thông tin cây
+// Cập nhật thông tin cây (JSON data)
+app.post('/api/gardens/:name/trees/json', asyncHandler(async (req, res) => {
+    const gardenName = req.params.name;
+    const treeData = req.body;
+    const row = parseInt(treeData.row, 10);
+    const col = parseInt(treeData.col, 10);
+
+    if (isNaN(row) || isNaN(col)) {
+        return res.status(400).json({ error: 'Hàng hoặc cột không hợp lệ.' });
+    }
+
+    console.log('Nhận dữ liệu JSON từ client:', {
+        gardenName,
+        row,
+        col,
+        variety: treeData.variety,
+        status: treeData.status,
+        notes: treeData.notes,
+        existingImagesLength: treeData.existingImages ? treeData.existingImages.length : 0,
+        harvestInfoLength: treeData.harvestInfo ? treeData.harvestInfo.length : 0
+    });
+
+    const finalTreeData = {
+        row,
+        col,
+        variety: treeData.variety || '',
+        status: treeData.status || '',
+        notes: treeData.notes || '',
+        images: [], // Sẽ được cập nhật sau khi upload images
+        harvestInfo: treeData.harvestInfo || []
+    };
+
+    console.log('Dữ liệu cuối cùng:', finalTreeData);
+
+    try {
+        const success = await updateTree(gardenName, finalTreeData);
+        if (!success) {
+            return res.status(404).json({ error: 'Không tìm thấy vườn.' });
+        }
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Lỗi khi lưu cây:', error);
+        res.status(500).json({ error: 'Lỗi server khi lưu thông tin cây.' });
+    }
+}));
+
+// Cập nhật hình ảnh cho cây
+app.post('/api/gardens/:name/trees/images', upload.array('images', 10), asyncHandler(async (req, res) => {
+    const gardenName = req.params.name;
+    const row = parseInt(req.body.row, 10);
+    const col = parseInt(req.body.col, 10);
+
+    if (isNaN(row) || isNaN(col)) {
+        return res.status(400).json({ error: 'Hàng hoặc cột không hợp lệ.' });
+    }
+
+    console.log('Nhận hình ảnh từ client:', {
+        gardenName,
+        row,
+        col,
+        filesCount: req.files ? req.files.length : 0
+    });
+
+    // Lấy thông tin cây hiện tại
+    const gardens = await readGardens();
+    const garden = gardens.find(g => g.name === gardenName);
+    if (!garden) {
+        return res.status(404).json({ error: 'Không tìm thấy vườn.' });
+    }
+
+    const tree = garden.trees.find(t => t.row === row && t.col === col);
+    
+    // Thêm hình ảnh mới
+    const uploadedImages = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    
+    let updatedTreeData;
+    if (tree) {
+        // Cập nhật cây hiện có
+        updatedTreeData = {
+            ...tree,
+            images: [...(tree.images || []), ...uploadedImages]
+        };
+    } else {
+        // Tạo cây mới chỉ với hình ảnh
+        updatedTreeData = {
+            row,
+            col,
+            variety: '',
+            status: 'Khỏe mạnh',
+            notes: '',
+            images: uploadedImages,
+            harvestInfo: []
+        };
+    }
+
+    console.log('Cập nhật tree với images:', {
+        existingImagesCount: tree ? (tree.images || []).length : 0,
+        newImagesCount: uploadedImages.length,
+        totalImagesCount: updatedTreeData.images.length
+    });
+
+    try {
+        const success = await updateTree(gardenName, updatedTreeData);
+        if (!success) {
+            return res.status(404).json({ error: 'Không tìm thấy vườn.' });
+        }
+        res.json({ success: true, uploadedImages });
+    } catch (error) {
+        console.error('Lỗi khi lưu hình ảnh:', error);
+        res.status(500).json({ error: 'Lỗi server khi lưu hình ảnh.' });
+    }
+}));
+
+// Cập nhật thông tin cây (legacy - giữ lại để tương thích)
 app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(async (req, res) => {
     const gardenName = req.params.name;
     const treeData = req.body;
@@ -243,12 +374,24 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
         return res.status(400).json({ error: 'Hàng hoặc cột không hợp lệ.' });
     }
 
+    console.log('Nhận dữ liệu từ client:', {
+        gardenName,
+        row,
+        col,
+        variety: treeData.variety,
+        status: treeData.status,
+        notes: treeData.notes,
+        existingImagesLength: treeData.existingImages ? treeData.existingImages.length : 0,
+        harvestInfoLength: treeData.harvestInfo ? treeData.harvestInfo.length : 0,
+        filesCount: req.files ? req.files.length : 0
+    });
+
     // Xử lý nhiều hình ảnh
     const uploadedImages = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
     
     // Xử lý existingImages an toàn hơn
     let existingImages = [];
-    if (treeData.existingImages && treeData.existingImages !== 'undefined') {
+    if (treeData.existingImages && treeData.existingImages !== 'undefined' && treeData.existingImages !== '[]') {
         try {
             existingImages = JSON.parse(treeData.existingImages);
         } catch (e) {
@@ -261,7 +404,7 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
 
     // Xử lý thông tin thu hoạch an toàn hơn
     let harvestInfo = [];
-    if (treeData.harvestInfo && treeData.harvestInfo !== 'undefined') {
+    if (treeData.harvestInfo && treeData.harvestInfo !== 'undefined' && treeData.harvestInfo !== '[]') {
         try {
             harvestInfo = JSON.parse(treeData.harvestInfo);
         } catch (e) {
@@ -280,6 +423,8 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
         harvestInfo
     };
 
+    console.log('Dữ liệu cuối cùng:', finalTreeData);
+
     try {
         const success = await updateTree(gardenName, finalTreeData);
         if (!success) {
@@ -290,6 +435,43 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
         console.error('Lỗi khi lưu cây:', error);
         res.status(500).json({ error: 'Lỗi server khi lưu thông tin cây.' });
     }
+}));
+
+// Debug: Kiểm tra dữ liệu database
+app.get('/api/debug/gardens/:name', asyncHandler(async (req, res) => {
+    const gardenName = req.params.name;
+    
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            
+            if (!garden) {
+                res.json({ error: 'Không tìm thấy vườn' });
+                resolve();
+                return;
+            }
+            
+            db.all('SELECT * FROM trees WHERE garden_id = ?', [garden.id], (err, trees) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                
+                res.json({
+                    garden,
+                    trees: trees.map(tree => ({
+                        ...tree,
+                        images: tree.images ? JSON.parse(tree.images) : [],
+                        harvest_info: tree.harvest_info ? JSON.parse(tree.harvest_info) : []
+                    }))
+                });
+                resolve();
+            });
+        });
+    });
 }));
 
 // Gom nhóm cây theo tình trạng
