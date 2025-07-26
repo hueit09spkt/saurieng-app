@@ -5,4 +5,7 @@ node_modules/
 uploads/*
 !uploads/.gitkeep
 data/*
-!data/.gitkeep 
+!data/.gitkeep
+*.db
+*.sqlite
+*.sqlite3 
