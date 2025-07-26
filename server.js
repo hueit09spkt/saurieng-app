@@ -7,6 +7,10 @@ const mongoose = require('mongoose');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Cấu hình Multer để lưu ảnh dưới dạng Base64
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
 // Kết nối MongoDB Atlas
 const MONGODB_URI = 'mongodb+srv://saurieng:saurieng123@cluster0.qpeveyo.mongodb.net/saurieng?retryWrites=true&w=majority&appName=Cluster0';
 
@@ -48,18 +52,7 @@ treeSchema.index({ garden_id: 1, row: 1, col: 1 }, { unique: true });
 const Garden = mongoose.model('Garden', gardenSchema);
 const Tree = mongoose.model('Tree', treeSchema);
 
-// Cấu hình Multer để lưu ảnh
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = 'uploads/';
-        require('fs').mkdirSync(uploadPath, { recursive: true });
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
-    }
-});
-const upload = multer({ storage });
+
 
 // Phục vụ file tĩnh từ thư mục public
 app.use(express.static('public'));
@@ -289,8 +282,12 @@ app.post('/api/gardens/:name/trees/images', upload.array('images', 10), asyncHan
 
     const tree = await Tree.findOne({ garden_id: garden._id, row, col });
     
-    // Thêm hình ảnh mới
-    const uploadedImages = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    // Thêm hình ảnh mới dưới dạng Base64
+    const uploadedImages = req.files ? req.files.map(file => {
+        const base64 = file.buffer.toString('base64');
+        const mimeType = file.mimetype;
+        return `data:${mimeType};base64,${base64}`;
+    }) : [];
     
     let updatedTreeData;
     if (tree) {
