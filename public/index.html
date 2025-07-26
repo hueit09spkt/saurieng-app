@@ -379,6 +379,16 @@
   </div>
 </div>
 
+    <!-- Spinner Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 z-[9999] bg-black bg-opacity-40 flex items-center justify-center hidden">
+      <div class="flex flex-col items-center">
+        <svg class="animate-spin h-12 w-12 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        <span class="text-white text-lg font-semibold">Đang lưu dữ liệu...</span>
+      </div>
+    </div>
 
     <script>
         let selectedGarden = null;
@@ -1018,6 +1028,7 @@
         }
 
         async function saveTree() {
+            showLoading(true);
             const variety = document.getElementById('tree-variety').value;
             const status = document.getElementById('tree-status').value;
             const notes = document.getElementById('tree-notes').value;
@@ -1107,6 +1118,8 @@
             } catch (error) {
                 console.error('Lỗi khi lưu cây:', error);
                 showToast('Lỗi khi lưu thông tin cây: ' + error.message, true);
+            } finally {
+                showLoading(false);
             }
         }
 
@@ -1189,6 +1202,15 @@
                 toast.classList.add('hidden');
                 toast.classList.remove(isError ? 'bg-red-500' : 'bg-green-500');
             }, 3000);
+        }
+
+        function showLoading(isShow) {
+            const overlay = document.getElementById('loading-overlay');
+            if (isShow) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
         }
 
         function closeTreeInfo() {

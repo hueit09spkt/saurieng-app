@@ -114,6 +114,19 @@ const updateTree = async (gardenName, treeData) => {
             return false;
         }
         
+        // Tìm tree hiện tại để lấy ảnh cũ
+        const existingTree = await Tree.findOne({ 
+            garden_id: garden._id, 
+            row: treeData.row, 
+            col: treeData.col 
+        });
+        
+        // Nếu có tree hiện tại và treeData không có images, giữ lại ảnh cũ
+        let finalImages = treeData.images || [];
+        if (existingTree && (!treeData.images || treeData.images.length === 0)) {
+            finalImages = existingTree.images || [];
+        }
+        
         console.log('Sẽ lưu vào database:', {
             gardenId: garden._id,
             row: treeData.row,
@@ -121,7 +134,7 @@ const updateTree = async (gardenName, treeData) => {
             variety: treeData.variety,
             status: treeData.status,
             notes: treeData.notes,
-            imagesCount: treeData.images ? treeData.images.length : 0,
+            imagesCount: finalImages.length,
             harvestInfoCount: treeData.harvestInfo ? treeData.harvestInfo.length : 0
         });
         
@@ -135,7 +148,7 @@ const updateTree = async (gardenName, treeData) => {
                 variety: treeData.variety,
                 status: treeData.status,
                 notes: treeData.notes,
-                images: treeData.images || [],
+                images: finalImages,
                 harvestInfo: treeData.harvestInfo || [],
                 updated_at: new Date()
             },
@@ -233,13 +246,31 @@ app.post('/api/gardens/:name/trees/json', asyncHandler(async (req, res) => {
         harvestInfoLength: treeData.harvestInfo ? treeData.harvestInfo.length : 0
     });
 
+    // Tìm tree hiện tại để lấy ảnh cũ nếu không có existingImages
+    const garden = await Garden.findOne({ name: gardenName });
+    if (!garden) {
+        return res.status(404).json({ error: 'Không tìm thấy vườn.' });
+    }
+    
+    const existingTree = await Tree.findOne({ 
+        garden_id: garden._id, 
+        row, 
+        col 
+    });
+    
+    // Sử dụng existingImages từ request, nếu không có thì giữ ảnh cũ
+    let finalImages = treeData.existingImages || [];
+    if (existingTree && (!finalImages || finalImages.length === 0)) {
+        finalImages = existingTree.images || [];
+    }
+    
     const finalTreeData = {
         row,
         col,
         variety: treeData.variety || '',
         status: treeData.status || '',
         notes: treeData.notes || '',
-        images: [], // Sẽ được cập nhật sau khi upload images
+        images: finalImages,
         harvestInfo: treeData.harvestInfo || []
     };
 
@@ -291,14 +322,15 @@ app.post('/api/gardens/:name/trees/images', upload.array('images', 10), asyncHan
     
     let updatedTreeData;
     if (tree) {
-        // Cập nhật cây hiện có
+        // Cập nhật cây hiện có - thêm ảnh mới vào ảnh cũ
+        const existingImages = tree.images || [];
         updatedTreeData = {
             row,
             col,
             variety: tree.variety,
             status: tree.status,
             notes: tree.notes,
-            images: [...(tree.images || []), ...uploadedImages],
+            images: [...existingImages, ...uploadedImages],
             harvestInfo: tree.harvestInfo || []
         };
     } else {
