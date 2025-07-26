@@ -3,43 +3,50 @@ const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
 const archiver = require('archiver');
-const sqlite3 = require('sqlite3').verbose();
+const mongoose = require('mongoose');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Khởi tạo database
-const db = new sqlite3.Database('./data/gardens.db');
+// Kết nối MongoDB Atlas
+const MONGODB_URI = 'mongodb+srv://saurieng:saurieng123@cluster0.qpeveyo.mongodb.net/saurieng?retryWrites=true&w=majority&appName=Cluster0';
 
-// Tạo tables nếu chưa có
-db.serialize(() => {
-    db.run(`
-        CREATE TABLE IF NOT EXISTS gardens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            rows INTEGER NOT NULL,
-            cols INTEGER NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-    
-    db.run(`
-        CREATE TABLE IF NOT EXISTS trees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            garden_id INTEGER NOT NULL,
-            row INTEGER NOT NULL,
-            col INTEGER NOT NULL,
-            variety TEXT,
-            status TEXT,
-            notes TEXT,
-            images TEXT,
-            harvest_info TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (garden_id) REFERENCES gardens (id),
-            UNIQUE(garden_id, row, col)
-        )
-    `);
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => {
+    console.log('✅ Kết nối MongoDB Atlas thành công!');
+})
+.catch((err) => {
+    console.error('❌ Lỗi kết nối MongoDB:', err);
 });
+
+// Định nghĩa Schema
+const gardenSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    rows: { type: Number, required: true },
+    cols: { type: Number, required: true },
+    created_at: { type: Date, default: Date.now }
+});
+
+const treeSchema = new mongoose.Schema({
+    garden_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Garden', required: true },
+    row: { type: Number, required: true },
+    col: { type: Number, required: true },
+    variety: { type: String, default: '' },
+    status: { type: String, default: 'Khỏe mạnh' },
+    notes: { type: String, default: '' },
+    images: [{ type: String }],
+    harvestInfo: [{ type: Object }],
+    created_at: { type: Date, default: Date.now },
+    updated_at: { type: Date, default: Date.now }
+});
+
+// Tạo unique index cho garden_id + row + col
+treeSchema.index({ garden_id: 1, row: 1, col: 1 }, { unique: true });
+
+const Garden = mongoose.model('Garden', gardenSchema);
+const Tree = mongoose.model('Tree', treeSchema);
 
 // Cấu hình Multer để lưu ảnh
 const storage = multer.diskStorage({
@@ -60,153 +67,114 @@ app.use('/uploads', express.static('uploads'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Hàm trợ giúp để đọc và ghi database
-const readGardens = () => {
-    return new Promise((resolve, reject) => {
-        db.all('SELECT * FROM gardens ORDER BY created_at DESC', [], (err, gardens) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            
-            if (gardens.length === 0) {
-                resolve([]);
-                return;
-            }
-            
-            const gardensWithTrees = [];
-            let processed = 0;
-            
-            gardens.forEach(garden => {
-                db.all('SELECT * FROM trees WHERE garden_id = ?', [garden.id], (err, trees) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    
-                    gardensWithTrees.push({
-                        ...garden,
-                        trees: trees.map(tree => ({
-                            row: tree.row,
-                            col: tree.col,
-                            variety: tree.variety,
-                            status: tree.status,
-                            notes: tree.notes,
-                            images: tree.images ? JSON.parse(tree.images) : [],
-                            harvestInfo: tree.harvest_info ? JSON.parse(tree.harvest_info) : []
-                        }))
-                    });
-                    
-                    processed++;
-                    if (processed === gardens.length) {
-                        resolve(gardensWithTrees);
-                    }
-                });
+// Hàm trợ giúp để đọc và ghi database MongoDB
+const readGardens = async () => {
+    try {
+        const gardens = await Garden.find().sort({ created_at: -1 });
+        const gardensWithTrees = [];
+        
+        for (const garden of gardens) {
+            const trees = await Tree.find({ garden_id: garden._id });
+            gardensWithTrees.push({
+                id: garden._id,
+                name: garden.name,
+                rows: garden.rows,
+                cols: garden.cols,
+                created_at: garden.created_at,
+                trees: trees.map(tree => ({
+                    row: tree.row,
+                    col: tree.col,
+                    variety: tree.variety,
+                    status: tree.status,
+                    notes: tree.notes,
+                    images: tree.images || [],
+                    harvestInfo: tree.harvestInfo || []
+                }))
             });
-        });
-    });
+        }
+        
+        return gardensWithTrees;
+    } catch (error) {
+        console.error('Lỗi khi đọc gardens:', error);
+        throw error;
+    }
 };
 
-const writeGarden = (gardenData) => {
-    return new Promise((resolve, reject) => {
-        db.run('INSERT INTO gardens (name, rows, cols) VALUES (?, ?, ?)', 
-            [gardenData.name, gardenData.rows, gardenData.cols], 
-            function(err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(this.lastID);
-                }
-            });
-    });
+const writeGarden = async (gardenData) => {
+    try {
+        const garden = new Garden(gardenData);
+        const savedGarden = await garden.save();
+        return savedGarden._id;
+    } catch (error) {
+        console.error('Lỗi khi tạo garden:', error);
+        throw error;
+    }
 };
 
-const updateTree = (gardenName, treeData) => {
-    return new Promise((resolve, reject) => {
+const updateTree = async (gardenName, treeData) => {
+    try {
         console.log('updateTree được gọi với:', { gardenName, treeData });
         
-        db.get('SELECT id FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
-            if (err) {
-                console.error('Lỗi khi tìm garden:', err);
-                reject(err);
-                return;
-            }
-            
-            if (!garden) {
-                console.log('Không tìm thấy garden:', gardenName);
-                resolve(false);
-                return;
-            }
-            
-            const images = JSON.stringify(treeData.images || []);
-            const harvestInfo = JSON.stringify(treeData.harvestInfo || []);
-            
-            console.log('Sẽ lưu vào database:', {
-                gardenId: garden.id,
+        const garden = await Garden.findOne({ name: gardenName });
+        if (!garden) {
+            console.log('Không tìm thấy garden:', gardenName);
+            return false;
+        }
+        
+        console.log('Sẽ lưu vào database:', {
+            gardenId: garden._id,
+            row: treeData.row,
+            col: treeData.col,
+            variety: treeData.variety,
+            status: treeData.status,
+            notes: treeData.notes,
+            imagesCount: treeData.images ? treeData.images.length : 0,
+            harvestInfoCount: treeData.harvestInfo ? treeData.harvestInfo.length : 0
+        });
+        
+        // Sử dụng findOneAndUpdate với upsert để tạo mới hoặc cập nhật
+        await Tree.findOneAndUpdate(
+            { garden_id: garden._id, row: treeData.row, col: treeData.col },
+            {
+                garden_id: garden._id,
                 row: treeData.row,
                 col: treeData.col,
                 variety: treeData.variety,
                 status: treeData.status,
                 notes: treeData.notes,
-                imagesCount: treeData.images ? treeData.images.length : 0,
-                harvestInfoCount: treeData.harvestInfo ? treeData.harvestInfo.length : 0
-            });
-            
-            db.run(`
-                INSERT OR REPLACE INTO trees 
-                (garden_id, row, col, variety, status, notes, images, harvest_info, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            `, [
-                garden.id,
-                treeData.row,
-                treeData.col,
-                treeData.variety,
-                treeData.status,
-                treeData.notes,
-                images,
-                harvestInfo
-            ], function(err) {
-                if (err) {
-                    console.error('Lỗi khi lưu tree:', err);
-                    reject(err);
-                } else {
-                    console.log('Lưu tree thành công, lastID:', this.lastID);
-                    resolve(true);
-                }
-            });
-        });
-    });
+                images: treeData.images || [],
+                harvestInfo: treeData.harvestInfo || [],
+                updated_at: new Date()
+            },
+            { upsert: true, new: true }
+        );
+        
+        console.log('Lưu tree thành công');
+        return true;
+    } catch (error) {
+        console.error('Lỗi khi lưu tree:', error);
+        throw error;
+    }
 };
 
-const deleteGarden = (gardenName) => {
-    return new Promise((resolve, reject) => {
-        db.get('SELECT id FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            
-            if (!garden) {
-                resolve(false);
-                return;
-            }
-            
-            db.run('DELETE FROM trees WHERE garden_id = ?', [garden.id], (err) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                
-                db.run('DELETE FROM gardens WHERE id = ?', [garden.id], (err) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(true);
-                    }
-                });
-            });
-        });
-    });
+const deleteGarden = async (gardenName) => {
+    try {
+        const garden = await Garden.findOne({ name: gardenName });
+        if (!garden) {
+            return false;
+        }
+        
+        // Xóa tất cả trees của garden này
+        await Tree.deleteMany({ garden_id: garden._id });
+        
+        // Xóa garden
+        await Garden.findByIdAndDelete(garden._id);
+        
+        return true;
+    } catch (error) {
+        console.error('Lỗi khi xóa garden:', error);
+        throw error;
+    }
 };
 
 // Hàm wrapper để xử lý lỗi trong các route async
@@ -313,14 +281,13 @@ app.post('/api/gardens/:name/trees/images', upload.array('images', 10), asyncHan
         filesCount: req.files ? req.files.length : 0
     });
 
-    // Lấy thông tin cây hiện tại
-    const gardens = await readGardens();
-    const garden = gardens.find(g => g.name === gardenName);
+    // Lấy thông tin cây hiện tại từ MongoDB
+    const garden = await Garden.findOne({ name: gardenName });
     if (!garden) {
         return res.status(404).json({ error: 'Không tìm thấy vườn.' });
     }
 
-    const tree = garden.trees.find(t => t.row === row && t.col === col);
+    const tree = await Tree.findOne({ garden_id: garden._id, row, col });
     
     // Thêm hình ảnh mới
     const uploadedImages = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
@@ -329,8 +296,13 @@ app.post('/api/gardens/:name/trees/images', upload.array('images', 10), asyncHan
     if (tree) {
         // Cập nhật cây hiện có
         updatedTreeData = {
-            ...tree,
-            images: [...(tree.images || []), ...uploadedImages]
+            row,
+            col,
+            variety: tree.variety,
+            status: tree.status,
+            notes: tree.notes,
+            images: [...(tree.images || []), ...uploadedImages],
+            harvestInfo: tree.harvestInfo || []
         };
     } else {
         // Tạo cây mới chỉ với hình ảnh
@@ -437,78 +409,69 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
     }
 }));
 
-// Debug: Kiểm tra dữ liệu database
+// Debug: Kiểm tra dữ liệu database MongoDB
 app.get('/api/debug/gardens/:name', asyncHandler(async (req, res) => {
     const gardenName = req.params.name;
     
-    return new Promise((resolve, reject) => {
-        db.get('SELECT * FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            
-            if (!garden) {
-                res.json({ error: 'Không tìm thấy vườn' });
-                resolve();
-                return;
-            }
-            
-            db.all('SELECT * FROM trees WHERE garden_id = ?', [garden.id], (err, trees) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                
-                res.json({
-                    garden,
-                    trees: trees.map(tree => ({
-                        ...tree,
-                        images: tree.images ? JSON.parse(tree.images) : [],
-                        harvest_info: tree.harvest_info ? JSON.parse(tree.harvest_info) : []
-                    }))
-                });
-                resolve();
-            });
+    try {
+        const garden = await Garden.findOne({ name: gardenName });
+        if (!garden) {
+            return res.json({ error: 'Không tìm thấy vườn' });
+        }
+        
+        const trees = await Tree.find({ garden_id: garden._id });
+        
+        res.json({
+            garden: {
+                id: garden._id,
+                name: garden.name,
+                rows: garden.rows,
+                cols: garden.cols,
+                created_at: garden.created_at
+            },
+            trees: trees.map(tree => ({
+                id: tree._id,
+                garden_id: tree.garden_id,
+                row: tree.row,
+                col: tree.col,
+                variety: tree.variety,
+                status: tree.status,
+                notes: tree.notes,
+                images: tree.images,
+                harvestInfo: tree.harvestInfo,
+                created_at: tree.created_at,
+                updated_at: tree.updated_at
+            }))
         });
-    });
+    } catch (error) {
+        console.error('Lỗi debug:', error);
+        res.status(500).json({ error: 'Lỗi server' });
+    }
 }));
 
 // Gom nhóm cây theo tình trạng
 app.get('/api/gardens/:name/grouped', asyncHandler(async (req, res) => {
     const gardenName = req.params.name;
     
-    return new Promise((resolve, reject) => {
-        db.get('SELECT id FROM gardens WHERE name = ?', [gardenName], (err, garden) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            
-            if (!garden) {
-                res.status(404).json({ error: 'Không tìm thấy vườn.' });
-                resolve();
-                return;
-            }
-            
-            db.all('SELECT status FROM trees WHERE garden_id = ?', [garden.id], (err, trees) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                
-                const groupedTrees = trees.reduce((acc, tree) => {
-                    const status = tree.status || 'Không xác định';
-                    if (!acc[status]) acc[status] = [];
-                    acc[status].push(tree);
-                    return acc;
-                }, {});
-                
-                res.json(groupedTrees);
-                resolve();
-            });
-        });
-    });
+    try {
+        const garden = await Garden.findOne({ name: gardenName });
+        if (!garden) {
+            return res.status(404).json({ error: 'Không tìm thấy vườn.' });
+        }
+        
+        const trees = await Tree.find({ garden_id: garden._id });
+        const groupedTrees = trees.reduce((acc, tree) => {
+            const status = tree.status || 'Không xác định';
+            if (!acc[status]) acc[status] = [];
+            acc[status].push(tree);
+            return acc;
+        }, {});
+        
+        res.json(groupedTrees);
+    } catch (error) {
+        console.error('Lỗi khi lấy grouped trees:', error);
+        res.status(500).json({ error: 'Lỗi server' });
+    }
 }));
 
 // Tạo và tải file backup
@@ -540,12 +503,16 @@ app.use((err, req, res, next) => {
 // Khởi tạo các thư mục cần thiết và khởi động server
 const initialize = async () => {
     try {
-        await fs.mkdir('./data', { recursive: true });
         await fs.mkdir('./uploads', { recursive: true });
+        
+        // Đợi kết nối MongoDB
+        await mongoose.connection.asPromise();
         
         // Kiểm tra xem có dữ liệu mẫu chưa
         const gardens = await readGardens();
         if (gardens.length === 0) {
+            console.log('Tạo dữ liệu mẫu...');
+            
             // Tạo vườn mẫu
             const gardenId = await writeGarden({
                 name: "Vườn Mẫu",
@@ -563,13 +530,15 @@ const initialize = async () => {
             for (const tree of sampleTrees) {
                 await updateTree("Vườn Mẫu", tree);
             }
+            
+            console.log('✅ Đã tạo dữ liệu mẫu thành công!');
         }
 
         app.listen(port, () => {
-            console.log(`Server chạy tại http://localhost:${port}`);
+            console.log(`🚀 Server chạy tại http://localhost:${port}`);
         });
     } catch (error) {
-        console.error('Không thể khởi động server:', error);
+        console.error('❌ Không thể khởi động server:', error);
         process.exit(1);
     }
 };

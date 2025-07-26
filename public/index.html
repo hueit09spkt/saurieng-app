@@ -342,27 +342,56 @@
     <div id="camera-modal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black flex flex-col">
             <!-- Header -->
-            <div class="flex justify-between items-center p-4 bg-black bg-opacity-50">
-                <button onclick="closeCamera()" class="text-white">
+            <div class="flex justify-between items-center p-4 bg-black bg-opacity-75">
+                <button onclick="closeCamera()" class="text-white p-2">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
-                <h3 class="text-white font-semibold">Chụp ảnh cây</h3>
-                <div class="w-6"></div>
+                <h3 class="text-white font-semibold text-lg">Chụp ảnh cây</h3>
+                <div class="w-10"></div>
             </div>
             
             <!-- Camera View -->
-            <div class="flex-1 flex items-center justify-center">
+            <div class="flex-1 flex items-center justify-center relative">
                 <video id="camera-video" autoplay playsinline class="w-full h-full object-cover"></video>
                 <canvas id="camera-canvas" class="hidden"></canvas>
+                
+                <!-- Camera Frame -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="border-4 border-white border-opacity-50 rounded-lg w-64 h-64 md:w-80 md:h-80">
+                        <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-white"></div>
+                        <div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-white"></div>
+                        <div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-white"></div>
+                        <div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-white"></div>
+                    </div>
+                </div>
             </div>
             
             <!-- Controls -->
-            <div class="flex justify-center items-center p-4 bg-black bg-opacity-50">
-                <button onclick="capturePhoto()" class="bg-white rounded-full p-4 mx-4">
-                    <div class="w-12 h-12 bg-white rounded-full border-4 border-gray-300"></div>
-                </button>
+            <div class="flex flex-col items-center p-6 bg-black bg-opacity-75">
+                <div class="text-white text-center mb-4">
+                    <p class="text-sm">Đặt cây vào khung hình và nhấn nút chụp</p>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <button onclick="closeCamera()" class="bg-gray-600 text-white rounded-full p-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    
+                    <button onclick="capturePhoto()" class="bg-white rounded-full p-2">
+                        <div class="w-16 h-16 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center">
+                            <div class="w-12 h-12 bg-gray-300 rounded-full"></div>
+                        </div>
+                    </button>
+                    
+                    <button onclick="switchCamera()" class="bg-gray-600 text-white rounded-full p-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1163,6 +1192,7 @@
 
         // --- Camera functions ---
         let cameraStream = null;
+        let currentFacingMode = 'environment'; // 'environment' = camera sau, 'user' = camera trước
 
         function openCamera() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1170,9 +1200,15 @@
                 return;
             }
 
+            // Đóng camera cũ nếu có
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+
             navigator.mediaDevices.getUserMedia({ 
                 video: { 
-                    facingMode: 'environment', // Sử dụng camera sau
+                    facingMode: currentFacingMode,
                     width: { ideal: 1920 },
                     height: { ideal: 1080 }
                 } 
@@ -1182,11 +1218,34 @@
                 const video = document.getElementById('camera-video');
                 video.srcObject = stream;
                 document.getElementById('camera-modal').classList.remove('hidden');
+                
+                // Thêm loading state
+                video.onloadedmetadata = function() {
+                    console.log('Camera đã sẵn sàng');
+                };
             })
             .catch(function(err) {
                 console.error('Lỗi camera:', err);
-                showToast('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.', true);
+                if (err.name === 'NotAllowedError') {
+                    showToast('Vui lòng cho phép truy cập camera để chụp ảnh.', true);
+                } else {
+                    showToast('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.', true);
+                }
             });
+        }
+
+        function switchCamera() {
+            // Chuyển đổi giữa camera trước và sau
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            
+            // Đóng camera hiện tại và mở camera mới
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            // Mở camera với facingMode mới
+            openCamera();
         }
 
         function closeCamera() {
@@ -1202,12 +1261,29 @@
             const canvas = document.getElementById('camera-canvas');
             const context = canvas.getContext('2d');
 
+            // Kiểm tra video đã sẵn sàng chưa
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                showToast('Camera chưa sẵn sàng. Vui lòng đợi một chút.', true);
+                return;
+            }
+
             // Set canvas size to match video
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
             // Draw video frame to canvas
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Hiển thị feedback
+            const captureBtn = document.querySelector('[onclick="capturePhoto()"]');
+            const originalContent = captureBtn.innerHTML;
+            captureBtn.innerHTML = `
+                <div class="w-16 h-16 bg-green-500 rounded-full border-4 border-green-300 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            `;
 
             // Convert canvas to blob
             canvas.toBlob(function(blob) {
@@ -1230,6 +1306,11 @@
                 // Trigger change event to update preview
                 const event = new Event('change', { bubbles: true });
                 fileInput.dispatchEvent(event);
+                
+                // Khôi phục nút chụp
+                setTimeout(() => {
+                    captureBtn.innerHTML = originalContent;
+                }, 1000);
                 
                 // Close camera
                 closeCamera();

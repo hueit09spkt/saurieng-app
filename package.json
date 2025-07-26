@@ -16,6 +16,8 @@
   "dependencies": {
     "archiver": "^7.0.1",
     "express": "^5.1.0",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.16.5",
     "multer": "^2.0.1",
     "sqlite3": "^5.1.7"
   },
