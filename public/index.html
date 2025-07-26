@@ -338,63 +338,46 @@
       </button>
     </div>
 
-    <!-- Camera Modal -->
-    <div id="camera-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black flex flex-col">
-            <!-- Header -->
-            <div class="flex justify-between items-center p-4 bg-black bg-opacity-75">
-                <button onclick="closeCamera()" class="text-white p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-                <h3 class="text-white font-semibold text-lg">Chụp ảnh cây</h3>
-                <div class="w-10"></div>
-            </div>
-            
-            <!-- Camera View -->
-            <div class="flex-1 flex items-center justify-center relative">
-                <video id="camera-video" autoplay playsinline class="w-full h-full object-cover"></video>
-                <canvas id="camera-canvas" class="hidden"></canvas>
-                
-                <!-- Camera Frame -->
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <div class="border-4 border-white border-opacity-50 rounded-lg w-64 h-64 md:w-80 md:h-80">
-                        <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-white"></div>
-                        <div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-white"></div>
-                        <div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-white"></div>
-                        <div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-white"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Controls -->
-            <div class="flex flex-col items-center p-6 bg-black bg-opacity-75">
-                <div class="text-white text-center mb-4">
-                    <p class="text-sm">Đặt cây vào khung hình và nhấn nút chụp</p>
-                </div>
-                <div class="flex items-center space-x-6">
-                    <button onclick="closeCamera()" class="bg-gray-600 text-white rounded-full p-4">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                    
-                    <button onclick="capturePhoto()" class="bg-white rounded-full p-2">
-                        <div class="w-16 h-16 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center">
-                            <div class="w-12 h-12 bg-gray-300 rounded-full"></div>
-                        </div>
-                    </button>
-                    
-                    <button onclick="switchCamera()" class="bg-gray-600 text-white rounded-full p-4">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
+    <!-- Camera Modal (bọc lại toàn bộ modal) -->
+<div id="camera-modal-bg" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden">
+  <div class="relative w-[90vw] h-auto md:w-[30vw] md:h-auto bg-black rounded-xl flex flex-col items-center justify-center shadow-2xl">
+    <!-- Camera Header -->
+    <div class="w-full flex items-center justify-between px-4 pt-4">
+      <button onclick="closeCamera()" class="text-white text-2xl font-bold">&times;</button>
+      <span class="text-white text-lg font-semibold flex-1 text-center">Chụp ảnh cây</span>
+      <div style="width: 32px;"></div>
     </div>
+    <!-- Video Camera -->
+    <div class="w-full flex justify-center items-center mt-2">
+      <video id="camera-video" autoplay playsinline class="rounded-lg w-full h-auto object-contain bg-black"></video>
+      <canvas id="camera-canvas" class="hidden"></canvas>
+    </div>
+    <!-- Camera Frame -->
+    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+      <div class="border-4 border-white border-opacity-50 rounded-lg w-2/3 h-2/3 md:w-[30vw] md:h-[30vw]" style="min-width: 120px; min-height: 120px;">
+        <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-white"></div>
+        <div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-white"></div>
+        <div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-white"></div>
+        <div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-white"></div>
+      </div>
+    </div>
+    <!-- Camera Controls -->
+    <div class="w-full flex items-center justify-center space-x-6 py-4 z-10">
+      <button onclick="switchCamera()" class="bg-gray-600 text-white rounded-full p-4 hover:bg-gray-700">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+      </button>
+      <button onclick="capturePhoto()" class="bg-red-500 text-white rounded-full p-4 hover:bg-red-600" style="min-width: 60px; min-height: 60px;">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="w-full text-center text-white text-sm pb-4">Đặt cây vào khung hình và nhấn nút chụp</div>
+  </div>
+</div>
 
 
     <script>
@@ -930,6 +913,102 @@
             });
         }
 
+        function openCamera() {
+            const modal = document.getElementById('camera-modal-bg');
+            modal.classList.remove('hidden');
+            const video = document.getElementById('camera-video');
+            // Tắt stream cũ nếu có
+            if (window.cameraStream) {
+                window.cameraStream.getTracks().forEach(track => track.stop());
+            }
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(stream => {
+                    window.cameraStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(err => {
+                    showToast('Không thể truy cập camera: ' + err.message, true);
+                    modal.classList.add('hidden');
+                });
+        }
+
+        function closeCamera() {
+            const modal = document.getElementById('camera-modal-bg');
+            modal.classList.add('hidden');
+            if (window.cameraStream) {
+                window.cameraStream.getTracks().forEach(track => track.stop());
+                window.cameraStream = null;
+            }
+        }
+
+        function switchCamera() {
+            const video = document.getElementById('camera-video');
+            const stream = video.srcObject;
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => {
+                    if (track.kind === 'video') {
+                        track.stop();
+                    }
+                });
+                video.srcObject = null;
+                video.src = ''; // Clear source to trigger autoplay
+                setTimeout(() => {
+                    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                        .then(newStream => {
+                            window.cameraStream = newStream;
+                            video.srcObject = newStream;
+                            video.play();
+                        })
+                        .catch(err => {
+                            showToast('Không thể truy cập camera: ' + err.message, true);
+                        });
+                }, 100); // Small delay to allow source clear
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('camera-video');
+            const canvas = document.getElementById('camera-canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageDataUrl = canvas.toDataURL('image/jpeg');
+            const preview = document.getElementById('tree-images-preview');
+            const imagesInput = document.getElementById('tree-images');
+            const dataTransfer = new DataTransfer();
+            
+            // Thêm các file hiện có
+            Array.from(imagesInput.files).forEach(file => dataTransfer.items.add(file));
+            
+            // Chuyển Base64 thành Blob rồi tạo File
+            const base64Data = imageDataUrl.split(',')[1];
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/jpeg' });
+            const newFile = new File([blob], 'captured_image.jpg', { type: 'image/jpeg' });
+            
+            dataTransfer.items.add(newFile);
+            imagesInput.files = dataTransfer.files;
+
+            // Trigger change event to update preview
+            const event = new Event('change', { bubbles: true });
+            imagesInput.dispatchEvent(event);
+
+            closeCamera();
+        }
+
+        function openFilePicker() {
+            document.getElementById('tree-images').click();
+        }
+
         function removeHarvestInfo(index) {
             if (!confirm('Bạn có chắc chắn muốn xóa thông tin thu hoạch này không?')) {
                 return;
@@ -938,132 +1017,96 @@
             displayHarvestList();
         }
 
-        async function confirmDeleteTree() {
-            if (!selectedCell || !selectedGarden) return;
-            if (!confirm('Bạn có chắc chắn muốn xóa cây này không?')) return;
-            const response = await fetch(`/api/gardens/${selectedGarden.name}/trees`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ row: selectedCell.row, col: selectedCell.col })
-            });
-            if (response.ok) {
-                closeTreeInfo();
-                loadGarden();
-                if (selectedGroup) showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
-                showToast('Xóa cây thành công!');
-            } else {
-                showToast('Lỗi khi xóa cây.', true);
-            }
-        }
-
-        function closeTreeInfo() {
-            document.getElementById('tree-info').classList.add('hidden');
-        }
-
         async function saveTree() {
             const variety = document.getElementById('tree-variety').value;
             const status = document.getElementById('tree-status').value;
             const notes = document.getElementById('tree-notes').value;
             const imagesInput = document.getElementById('tree-images');
-            
-            // Lấy hình ảnh hiện có
-            const preview = document.getElementById('tree-images-preview');
-            const existingImages = Array.from(preview.children).map(container => 
-                container.querySelector('img').src
-            );
+            const harvestInfo = currentHarvestList;
 
-            const treeData = {
-                variety,
-                status,
-                notes,
-                row: selectedCell.row,
-                col: selectedCell.col,
-                images: existingImages,
-                harvestInfo: currentHarvestList
-            };
+            if (!selectedCell || !variety) {
+                showToast('Vui lòng chọn ô và nhập giống cây.', true);
+                return;
+            }
 
             try {
-                // Gửi dữ liệu JSON trước (chỉ metadata, không gửi base64 images)
+                // Lấy ảnh hiện có từ tree đã lưu
+                const existingTree = selectedGarden.trees?.find(t => 
+                    t.row === selectedCell.row && t.col === selectedCell.col
+                );
+                const existingImages = existingTree?.images || [];
+
+                // Log debug
+                console.log('--- DEBUG saveTree ---');
+                console.log('selectedCell:', selectedCell);
+                console.log('selectedGarden:', selectedGarden);
+                console.log('existingImages:', existingImages);
+                console.log('harvestInfo:', harvestInfo);
+
+                // Gửi dữ liệu JSON trước
                 const jsonData = {
                     variety,
                     status,
                     notes,
                     row: selectedCell.row,
                     col: selectedCell.col,
-                    existingImagesCount: existingImages.length,
-                    harvestInfo: currentHarvestList
+                    existingImages: existingImages,
+                    harvestInfo: harvestInfo
                 };
+                console.log('Gửi JSON:', jsonData);
 
-                console.log('Gửi dữ liệu JSON:', jsonData);
-
-                // Gửi JSON data trước
                 const jsonResponse = await fetch(`/api/gardens/${selectedGarden.name}/trees/json`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(jsonData)
                 });
+                console.log('Kết quả response JSON:', jsonResponse.status, await jsonResponse.clone().text());
 
                 if (!jsonResponse.ok) {
-                    throw new Error('Lỗi khi gửi dữ liệu JSON');
+                    throw new Error('Lỗi khi lưu thông tin cây');
                 }
 
-                // Nếu có hình ảnh mới, gửi riêng
+                // Nếu có ảnh mới, upload ảnh
                 if (imagesInput.files.length > 0) {
                     const formData = new FormData();
+                    formData.append('row', selectedCell.row);
+                    formData.append('col', selectedCell.col);
+                    
                     for (let i = 0; i < imagesInput.files.length; i++) {
                         formData.append('images', imagesInput.files[i]);
                     }
-                    formData.append('row', selectedCell.row);
-                    formData.append('col', selectedCell.col);
 
+                    console.log('Gửi ảnh:', imagesInput.files);
                     const imageResponse = await fetch(`/api/gardens/${selectedGarden.name}/trees/images`, {
                         method: 'POST',
                         body: formData
                     });
+                    console.log('Kết quả response images:', imageResponse.status, await imageResponse.clone().text());
 
                     if (!imageResponse.ok) {
-                        throw new Error('Lỗi khi gửi hình ảnh');
+                        throw new Error('Lỗi khi upload ảnh');
                     }
                 }
 
-                const response = { ok: true }; // Giả lập response thành công
-
-                if (response.ok) {
-                    // Cập nhật localStorage
-                    updateLocalGarden(selectedGarden.name, selectedCell.row, selectedCell.col, treeData);
-                    
-                    closeTreeInfo();
-                    
-                    // Refresh dữ liệu từ server và cập nhật UI
-                    await refreshGardenData();
-                    
-                    // Refresh lại nhóm cây ngay lập tức
-                    if (selectedGroup) {
-                        showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
-                    }
-                    
-                    showToast('Lưu thông tin cây thành công!');
-                } else {
-                    const errorData = await response.json();
-                    console.error('Server error:', errorData);
-                    throw new Error(errorData.error || 'Server error');
+                // Refresh dữ liệu từ server
+                await refreshGardenData();
+                
+                showToast('Đã lưu thông tin cây!');
+                const modal = document.getElementById('tree-info');
+                console.log('Ẩn modal tree-info:', !!modal);
+                if (modal) {
+                    modal.classList.add('hidden');
+                }
+                // Gọi lại loadGarden để cập nhật UI
+                await loadGarden();
+                // Nếu subgrid đang mở thì cập nhật lại subgrid
+                const subGridContainer = document.getElementById('sub-grid-container');
+                if (subGridContainer && !subGridContainer.classList.contains('hidden') && selectedGroup) {
+                    showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
                 }
             } catch (error) {
                 console.error('Lỗi khi lưu cây:', error);
-                
-                // Fallback: lưu vào localStorage
-                updateLocalGarden(selectedGarden.name, selectedCell.row, selectedCell.col, treeData);
-                
-                closeTreeInfo();
-                
-                // Refresh dữ liệu từ localStorage
-                await refreshGardenData();
-                
-                if (selectedGroup) {
-                    showSubGrid(selectedGroup.gRow, selectedGroup.gCol, selectedGroup.groupRows, selectedGroup.groupCols);
-                }
-                
-                showToast('Đã lưu offline. Sẽ đồng bộ khi có kết nối mạng.');
+                showToast('Lỗi khi lưu thông tin cây: ' + error.message, true);
             }
         }
 
@@ -1072,284 +1115,86 @@
                 const response = await fetch('/api/gardens');
                 if (response.ok) {
                     const gardens = await response.json();
-                    saveToLocalStorage('gardens', gardens);
-                    
-                    // Cập nhật selectedGarden với dữ liệu mới
-                    if (selectedGarden) {
-                        const updatedGarden = gardens.find(g => g.name === selectedGarden.name);
-                        if (updatedGarden) {
-                            selectedGarden = updatedGarden;
-                        }
+                    const currentGarden = gardens.find(g => g.name === selectedGarden.name);
+                    if (currentGarden) {
+                        selectedGarden = currentGarden;
+                        loadGarden();
+                        // Không gọi showSubGrid() vì nó cần tham số
                     }
-                    
-                    // Refresh UI
-                    loadGarden();
-                } else {
-                    console.error('Không thể refresh dữ liệu từ server');
                 }
             } catch (error) {
                 console.error('Lỗi khi refresh dữ liệu:', error);
             }
         }
 
-        function updateLocalGarden(gardenName, row, col, treeData) {
-            const localGardens = loadFromLocalStorage('gardens') || [];
-            const garden = localGardens.find(g => g.name === gardenName);
-            
-            if (garden) {
-                if (!garden.trees) garden.trees = [];
-                
-                const existingTreeIndex = garden.trees.findIndex(t => t.row === row && t.col === col);
-                if (existingTreeIndex >= 0) {
-                    garden.trees[existingTreeIndex] = { ...garden.trees[existingTreeIndex], ...treeData };
-                } else {
-                    garden.trees.push(treeData);
-                }
-                
-                saveToLocalStorage('gardens', localGardens);
+        function confirmDeleteTree() {
+            if (!confirm('Bạn có chắc chắn muốn xóa cây này không? Thao tác này không thể hoàn tác.')) {
+                return;
             }
+            if (selectedGarden.trees) {
+                const initialLength = selectedGarden.trees.length;
+                selectedGarden.trees = selectedGarden.trees.filter(tree => 
+                    !(tree.row === selectedCell.row && tree.col === selectedCell.col)
+                );
+                if (selectedGarden.trees.length < initialLength) {
+                    saveToLocalStorage('gardens', selectedGarden);
+                    loadGarden();
+                    showToast('Đã xóa cây thành công!');
+                } else {
+                    showToast('Không tìm thấy cây để xóa.', true);
+                }
+            }
+        }
+
+        function openImageModal(images, index) {
+            const modal = document.getElementById('image-modal');
+            const modalImage = document.getElementById('modal-image');
+            const prevBtn = document.getElementById('prev-image');
+            const nextBtn = document.getElementById('next-image');
+            const closeBtn = document.getElementById('close-image-modal');
+
+            modal.classList.remove('hidden');
+            modalImage.src = images[index];
+
+            let currentImageIndex = index;
+
+            prevBtn.onclick = () => {
+                currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+                modalImage.src = images[currentImageIndex];
+            };
+
+            nextBtn.onclick = () => {
+                currentImageIndex = (currentImageIndex + 1) % images.length;
+                modalImage.src = images[currentImageIndex];
+            };
+
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+            };
+
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            };
         }
 
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
-            const messageEl = document.getElementById('toast-message');
-            const icon = toast.querySelector('svg');
-            
-            messageEl.textContent = message;
-            
-            if (isError) {
-                toast.querySelector('.border-primary').classList.remove('border-primary');
-                toast.querySelector('.border-primary').classList.add('border-red-500');
-                icon.classList.remove('text-primary');
-                icon.classList.add('text-red-500');
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
-            } else {
-                toast.querySelector('.border-red-500')?.classList.remove('border-red-500');
-                toast.querySelector('.border-red-500')?.classList.add('border-primary');
-                icon.classList.remove('text-red-500');
-                icon.classList.add('text-primary');
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
-            }
-            
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
             toast.classList.remove('hidden');
+            toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
             setTimeout(() => {
                 toast.classList.add('hidden');
+                toast.classList.remove(isError ? 'bg-red-500' : 'bg-green-500');
             }, 3000);
         }
 
-        // --- Phóng to ảnh, chuyển ảnh, đóng popup, hỗ trợ back ---
-        let modalImages = [];
-        let modalIndex = 0;
-
-        function openImageModal(images, index) {
-          modalImages = images;
-          modalIndex = index;
-          showModalImage();
-          document.getElementById('image-modal').classList.remove('hidden');
-          window.history.pushState({ imageModal: true }, '');
-        }
-
-        function showModalImage() {
-          const img = document.getElementById('modal-image');
-          img.src = modalImages[modalIndex];
-        }
-
-        document.getElementById('close-image-modal').onclick = function() {
-          document.getElementById('image-modal').classList.add('hidden');
-          if (window.history.state && window.history.state.imageModal) window.history.back();
-        };
-
-        document.getElementById('prev-image').onclick = function() {
-          if (modalIndex > 0) {
-            modalIndex--;
-            showModalImage();
-          }
-        };
-
-        document.getElementById('next-image').onclick = function() {
-          if (modalIndex < modalImages.length - 1) {
-            modalIndex++;
-            showModalImage();
-          }
-        };
-
-        // Vuốt chuyển ảnh trên mobile
-        let startX = 0;
-        document.getElementById('image-modal').addEventListener('touchstart', function(e) {
-          startX = e.touches[0].clientX;
-        });
-        document.getElementById('image-modal').addEventListener('touchend', function(e) {
-          let endX = e.changedTouches[0].clientX;
-          if (endX - startX > 50) document.getElementById('prev-image').click();
-          if (startX - endX > 50) document.getElementById('next-image').click();
-        });
-
-        // Hỗ trợ nút back trên Android
-        window.addEventListener('popstate', function(e) {
-          if (document.getElementById('image-modal').classList.contains('hidden')) return;
-          document.getElementById('image-modal').classList.add('hidden');
-        });
-
-        // --- Camera functions ---
-        let cameraStream = null;
-        let currentFacingMode = 'environment'; // 'environment' = camera sau, 'user' = camera trước
-
-        function openCamera() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                showToast('Camera không được hỗ trợ trên thiết bị này.', true);
-                return;
-            }
-
-            // Đóng camera cũ nếu có
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-
-            navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: currentFacingMode,
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                } 
-            })
-            .then(function(stream) {
-                cameraStream = stream;
-                const video = document.getElementById('camera-video');
-                video.srcObject = stream;
-                document.getElementById('camera-modal').classList.remove('hidden');
-                
-                // Thêm loading state
-                video.onloadedmetadata = function() {
-                    console.log('Camera đã sẵn sàng');
-                };
-            })
-            .catch(function(err) {
-                console.error('Lỗi camera:', err);
-                if (err.name === 'NotAllowedError') {
-                    showToast('Vui lòng cho phép truy cập camera để chụp ảnh.', true);
-                } else {
-                    showToast('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.', true);
-                }
-            });
-        }
-
-        function switchCamera() {
-            // Chuyển đổi giữa camera trước và sau
-            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-            
-            // Đóng camera hiện tại và mở camera mới
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-            
-            // Mở camera với facingMode mới
-            openCamera();
-        }
-
-        function closeCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-            document.getElementById('camera-modal').classList.add('hidden');
-        }
-
-        function capturePhoto() {
-            const video = document.getElementById('camera-video');
-            const canvas = document.getElementById('camera-canvas');
-            const context = canvas.getContext('2d');
-
-            // Kiểm tra video đã sẵn sàng chưa
-            if (video.videoWidth === 0 || video.videoHeight === 0) {
-                showToast('Camera chưa sẵn sàng. Vui lòng đợi một chút.', true);
-                return;
-            }
-
-            // Set canvas size to match video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-
-            // Draw video frame to canvas
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Hiển thị feedback
-            const captureBtn = document.querySelector('[onclick="capturePhoto()"]');
-            const originalContent = captureBtn.innerHTML;
-            captureBtn.innerHTML = `
-                <div class="w-16 h-16 bg-green-500 rounded-full border-4 border-green-300 flex items-center justify-center">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                </div>
-            `;
-
-            // Convert canvas to blob
-            canvas.toBlob(function(blob) {
-                // Create a file from blob
-                const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
-                
-                // Add to file input
-                const fileInput = document.getElementById('tree-images');
-                const dataTransfer = new DataTransfer();
-                
-                // Add existing files
-                for (let i = 0; i < fileInput.files.length; i++) {
-                    dataTransfer.items.add(fileInput.files[i]);
-                }
-                
-                // Add new photo
-                dataTransfer.items.add(file);
-                fileInput.files = dataTransfer.files;
-                
-                // Trigger change event to update preview
-                const event = new Event('change', { bubbles: true });
-                fileInput.dispatchEvent(event);
-                
-                // Khôi phục nút chụp
-                setTimeout(() => {
-                    captureBtn.innerHTML = originalContent;
-                }, 1000);
-                
-                // Close camera
-                closeCamera();
-                showToast('Đã chụp ảnh thành công!');
-            }, 'image/jpeg', 0.8);
-        }
-
-        function openFilePicker() {
-            document.getElementById('tree-images').click();
-        }
-
-        // --- Gắn sự kiện click vào ảnh preview ---
-        function displayImages(images) {
-            const preview = document.getElementById('tree-images-preview');
-            preview.innerHTML = '';
-            
-            if (images.length > 0) {
-                preview.classList.remove('hidden');
-                images.forEach((image, index) => {
-                    const imgContainer = document.createElement('div');
-                    imgContainer.className = 'relative';
-                    
-                    const img = document.createElement('img');
-                    img.src = image;
-                    img.className = 'w-full h-20 object-cover rounded cursor-pointer';
-                    img.alt = '';
-                    img.onclick = () => openImageModal(images, index);
-                    
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'absolute top-1 right-1 bg-red-500 text-white text-xs px-1 py-0.5 rounded-full hover:bg-red-600';
-                    deleteBtn.innerHTML = '×';
-                    deleteBtn.onclick = () => removeImage(index);
-                    
-                    imgContainer.appendChild(img);
-                    imgContainer.appendChild(deleteBtn);
-                    preview.appendChild(imgContainer);
-                });
-            } else {
-                preview.classList.add('hidden');
+        function closeTreeInfo() {
+            const modal = document.getElementById('tree-info');
+            if (modal) {
+                modal.classList.add('hidden');
             }
         }
     </script>
