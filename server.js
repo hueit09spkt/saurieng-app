@@ -245,15 +245,27 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
 
     // Xử lý nhiều hình ảnh
     const uploadedImages = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-    const existingImages = treeData.existingImages ? JSON.parse(treeData.existingImages) : [];
+    
+    // Xử lý existingImages an toàn hơn
+    let existingImages = [];
+    if (treeData.existingImages && treeData.existingImages !== 'undefined') {
+        try {
+            existingImages = JSON.parse(treeData.existingImages);
+        } catch (e) {
+            console.log('Lỗi parse existingImages:', e);
+            existingImages = [];
+        }
+    }
+    
     const allImages = [...existingImages, ...uploadedImages];
 
-    // Xử lý thông tin thu hoạch
+    // Xử lý thông tin thu hoạch an toàn hơn
     let harvestInfo = [];
-    if (treeData.harvestInfo) {
+    if (treeData.harvestInfo && treeData.harvestInfo !== 'undefined') {
         try {
             harvestInfo = JSON.parse(treeData.harvestInfo);
         } catch (e) {
+            console.log('Lỗi parse harvestInfo:', e);
             harvestInfo = [];
         }
     }
@@ -261,19 +273,23 @@ app.post('/api/gardens/:name/trees', upload.array('images', 10), asyncHandler(as
     const finalTreeData = {
         row,
         col,
-        variety: treeData.variety,
-        status: treeData.status,
-        notes: treeData.notes,
+        variety: treeData.variety || '',
+        status: treeData.status || '',
+        notes: treeData.notes || '',
         images: allImages,
         harvestInfo
     };
 
-    const success = await updateTree(gardenName, finalTreeData);
-    if (!success) {
-        return res.status(404).json({ error: 'Không tìm thấy vườn.' });
+    try {
+        const success = await updateTree(gardenName, finalTreeData);
+        if (!success) {
+            return res.status(404).json({ error: 'Không tìm thấy vườn.' });
+        }
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Lỗi khi lưu cây:', error);
+        res.status(500).json({ error: 'Lỗi server khi lưu thông tin cây.' });
     }
-
-    res.json({ success: true });
 }));
 
 // Gom nhóm cây theo tình trạng

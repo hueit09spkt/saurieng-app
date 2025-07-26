@@ -953,18 +953,6 @@
                 harvestInfo: currentHarvestList
             };
 
-            // Thêm hình ảnh mới từ file input
-            if (imagesInput.files.length > 0) {
-                for (let i = 0; i < imagesInput.files.length; i++) {
-                    const file = imagesInput.files[i];
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        treeData.images.push(e.target.result);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-
             try {
                 const formData = new FormData();
                 formData.append('variety', variety);
@@ -972,13 +960,35 @@
                 formData.append('notes', notes);
                 formData.append('row', selectedCell.row);
                 formData.append('col', selectedCell.col);
-                formData.append('existingImages', JSON.stringify(existingImages));
-                formData.append('harvestInfo', JSON.stringify(currentHarvestList));
+                
+                // Đảm bảo JSON được gửi đúng cách
+                if (existingImages.length > 0) {
+                    formData.append('existingImages', JSON.stringify(existingImages));
+                } else {
+                    formData.append('existingImages', '[]');
+                }
+                
+                if (currentHarvestList.length > 0) {
+                    formData.append('harvestInfo', JSON.stringify(currentHarvestList));
+                } else {
+                    formData.append('harvestInfo', '[]');
+                }
                 
                 // Thêm hình ảnh mới
                 for (let i = 0; i < imagesInput.files.length; i++) {
                     formData.append('images', imagesInput.files[i]);
                 }
+
+                console.log('Gửi dữ liệu:', {
+                    variety,
+                    status,
+                    notes,
+                    row: selectedCell.row,
+                    col: selectedCell.col,
+                    existingImages: existingImages.length,
+                    harvestInfo: currentHarvestList.length,
+                    newImages: imagesInput.files.length
+                });
 
                 const response = await fetch(`/api/gardens/${selectedGarden.name}/trees`, {
                     method: 'POST',
@@ -999,10 +1009,14 @@
                     
                     showToast('Lưu thông tin cây thành công!');
                 } else {
-                    throw new Error('Server error');
+                    const errorData = await response.json();
+                    console.error('Server error:', errorData);
+                    throw new Error(errorData.error || 'Server error');
                 }
             } catch (error) {
-                // Nếu server lỗi, vẫn lưu vào localStorage
+                console.error('Lỗi khi lưu cây:', error);
+                
+                // Fallback: lưu vào localStorage
                 updateLocalGarden(selectedGarden.name, selectedCell.row, selectedCell.col, treeData);
                 
                 closeTreeInfo();
